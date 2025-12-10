@@ -1,0 +1,43 @@
+services:
+  vscode:
+    build:
+      context: ..
+      dockerfile: DinD/Dockerfile-vsc-wslg
+    image: vscode-wslg-dind
+    shm_size: '1gb' # Más memoria compartida
+    privileged: true # Requerido para DinD
+    environment:
+      - DISPLAY
+      - WAYLAND_DISPLAY
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - PULSE_SERVER
+      - VSCODE_EXTENSIONS_PROFILE
+      #- ELECTRON_OZONE_PLATFORM_HINT=x11 # forzar X11
+      - BROWSER=surf
+    volumes:
+      # Workspace del proyecto
+      - ${PROJECT_DIR}:/workspace
+      
+      # Volúmenes WSLg para GUI
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /mnt/wslg:/mnt/wslg
+      
+      # Persistencia de Docker (imágenes, capas, contenedores)
+      # Aislado por proyecto para evitar conflictos
+      - dind-data:/var/lib/docker
+      
+      # Persistencia de extensiones y configuración
+      # Estos volúmenes son nombrados según el proyecto (via COMPOSE_PROJECT_NAME)
+      - vscode-extensions:/home/dev/.vscode
+      - vscode-config:/home/dev/.config/Code
+    restart: "no"
+
+volumes:
+  # Volúmenes nombrados que Docker gestionará automáticamente
+  # El nombre completo será:
+  # {COMPOSE_PROJECT_NAME}_docker-data
+  # {COMPOSE_PROJECT_NAME}_vscode-extensions
+  # {COMPOSE_PROJECT_NAME}_vscode-config
+  dind-data:
+  vscode-extensions:
+  vscode-config:

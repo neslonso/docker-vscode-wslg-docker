@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+set -e
+
+########################################################################################################################
+# Funciones
+
+show_help() {
+	local reset='\033[0m'
+	local cyan='\033[36m'
+	local yellow='\033[33m'
+	local green='\033[32m'
+	local magenta='\033[35m'
+	local white='\033[97m'
+
+	echo "" >&2
+	echo -e "${white}Uso:${reset} ${cyan}$0${reset} [${magenta}dood${reset}|${magenta}dind${reset}] <acción> [perfil]" >&2
+	echo "" >&2
+	echo -e "Lanzador de VSCode containerizado mostrado via ${white}WSLg${reset}." >&2
+	echo -e "Ejecutar desde el directorio que se desee montar como ${yellow}/workspace${reset}." >&2
+	echo "" >&2
+	echo -e "${white}Modo:${reset}" >&2
+	echo -e "  ${magenta}dood${reset}  → Docker-out-of-Docker (usa el daemon de Docker del host via /var/run/docker.sock)" >&2
+	echo -e "  ${magenta}dind${reset}  → Docker-in-Docker (daemon Docker dentro del contenedor)" >&2
+	echo "" >&2
+	echo -e "${white}Acciones:${reset}" >&2
+	echo -e "  ${green}build${reset}      Reconstruir la imagen" >&2
+	echo -e "  ${green}up${reset}         Lanzar VSCode (foreground, down al cerrar)" >&2
+	echo -e "  ${green}upd${reset}        Lanzar VSCode (background)" >&2
+	echo -e "  ${green}upd-logs${reset}   Lanzar VSCode (background + logs)" >&2
+	echo -e "  ${green}down${reset}       Parar contenedor" >&2
+	echo -e "  ${green}clean${reset}      Parar contenedor y borrar volúmenes" >&2
+	echo "" >&2
+	echo -e "${white}Perfiles disponibles:${reset}" >&2
+	for f in "$script_dir"/profiles/*.extensions; do
+		[ -f "$f" ] && echo -e "  ${magenta}$(basename "$f" .extensions)${reset}" >&2
+	done
+	echo "" >&2
+	echo -e "${white}Ejemplos:${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${magenta}dood${reset} ${green}up${reset} symfony" >&2
+	echo -e "  ${cyan}$0${reset} ${magenta}dind${reset} ${green}down${reset} symfony" >&2
+	echo "" >&2
+	exit 1
+}
+
+########################################################################################################################
+# Script
+
+# Directorio desde donde se ejecuta este script
+
+mode="$1"
+action="$2"
+#profile="${3:-symfony}"
+profile="$3"
+
+# Directorio donde vive este script
+script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+
+# Selección del docker-compose según modo
+case "$mode" in
+	dood)
+		compose_file="$script_dir/DooD/docker-compose.yml"
+		;;
+	dind)
+		compose_file="$script_dir/DinD/docker-compose.yml"
+		;;
+	*)
+		echo "✗ Modo desconocido: $mode" >&2
+		show_help
+		exit 1
+		;;
+esac
+
+if [ ! -f "$compose_file" ]; then
+	echo "✗ No se encontró el docker-compose para el modo '$mode': $compose_file" >&2
+	exit 1
+fi
+
+if [ -z "$action" ]; then
+	echo "✗ Falta la acción." >&2
+	show_help
+	exit 1
+fi
+
+# Directorio del proyecto (desde donde se ejecuta este script)
+project_dir="$PWD"
+
+# Nombre del proyecto según la carpeta actual
+raw_name="$(basename "$PWD")"
+safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
+proj_name="vsc_${safe_name}"
+
+########################################################################################################################
+# Variables de entorno comunes
+
+export COMPOSE_PROJECT_NAME="$proj_name"
+export PROJECT_DIR="$project_dir"
+export VSCODE_EXTENSIONS_PROFILE="$profile"
+
+########################################################################################################################
+# Ejecución
+
+case "$action" in
+	build)
+		# a rebuild le da igual el COMPOSE_PROJECT_NAME pq no llega a crear contenedores ni redes
+		docker compose -f "$compose_file" build
+		;;
+	up)
+		#COMPOSE_PROJECT_NAME="$proj_name" \
+		#PROJECT_DIR="$project_dir" \
+		docker compose -f "$compose_file" up
+		docker compose -f "$compose_file" down
+		;;
+	upd)
+		docker compose -f "$compose_file" up -d
+		;;
+	upd-logs)
+		docker compose -f "$compose_file" up -d
+		docker compose -f "$compose_file" logs -f
+		;;
+	down)
+		docker compose -f "$compose_file" down
+		;;
+	clean)
+		docker compose -f "$compose_file" down -v
+		echo "✓ Volúmenes eliminados: ${proj_name}_vscode-extensions, ${proj_name}_vscode-config"
+		;;
+	*)
+		echo "✗ Acción desconocida: $action" >&2
+		show_help
+		exit 1
+		;;
+esac
