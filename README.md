@@ -31,8 +31,23 @@ Cuando se trabaja en múltiples proyectos con diferentes stacks tecnológicos, m
 │   ├── Dockerfile-vsc-wslg
 │   ├── docker-compose.yml
 │   └── entrypoint.sh
-└── profiles/                # Perfiles de extensiones
-    └── symfony.extensions
+├── lib/                     # Bibliotecas auxiliares
+│   └── profile-loader.sh
+└── profiles/                # Perfiles de desarrollo
+    ├── symfony/             # Perfil para Symfony/PHP
+    │   ├── profile.yml
+    │   ├── extensions.list
+    │   ├── install.sh
+    │   ├── vscode/
+    │   │   └── settings.json
+    │   └── README.md
+    └── rust/                # Perfil para Rust
+        ├── profile.yml
+        ├── extensions.list
+        ├── install.sh
+        ├── vscode/
+        │   └── settings.json
+        └── README.md
 ```
 
 ## Modos de operación
@@ -115,11 +130,102 @@ Esto siginifica que si lanzas el scripts desde dos directorios con el mismo nomb
 ./vsc-wslg dood clean
 ```
 
-## Perfiles de extensiones
+## Perfiles de desarrollo
 
-Los perfiles permiten preinstalar conjuntos de extensiones según el tipo de proyecto. Se definen en archivos `.extensions` dentro del directorio `profiles/`.
+Los perfiles permiten configurar entornos completos según el tipo de proyecto. Cada perfil es un directorio que puede incluir:
 
-### Formato del archivo
+- **Extensiones de VSCode**: lista de extensiones a instalar
+- **Paquetes del sistema**: herramientas y dependencias del SO
+- **Configuraciones de VSCode**: settings personalizados por perfil
+- **Metadatos**: descripción, versión, tags
+
+### Estructura de un perfil
+
+```
+profiles/
+└── nombre-perfil/
+    ├── profile.yml           # Metadatos (nombre, descripción, versión)
+    ├── extensions.list       # Lista de extensiones VSCode
+    ├── install.sh            # Script para instalar paquetes del SO
+    ├── vscode/               # Configuraciones VSCode específicas
+    │   ├── settings.json     # Settings personalizados
+    │   └── keybindings.json  # (opcional) Atajos de teclado
+    └── README.md             # (opcional) Documentación
+```
+
+### Perfiles incluidos
+
+#### Symfony (PHP)
+
+Entorno completo para desarrollo PHP con Symfony Framework.
+
+**Herramientas instaladas:**
+- PHP 8.x con extensiones (xml, mbstring, curl, zip, intl, etc.)
+- Composer (gestor de dependencias PHP)
+- Symfony CLI
+
+**Extensiones VSCode:**
+- PHP IntelliSense, Xdebug, DocBlocker
+- Soporte para Symfony y Twig
+- YAML, XML y archivos de entorno
+- PHPUnit y PHP CS Fixer
+- GitLens, Docker
+
+**Uso:**
+```bash
+./vsc-wslg dood up symfony
+```
+
+#### Rust
+
+Entorno completo para desarrollo Rust con soporte para compilación cruzada a Windows.
+
+**Herramientas instaladas:**
+- Rust toolchain (stable) vía rustup
+- Target Linux: `x86_64-unknown-linux-gnu`
+- Target Windows: `x86_64-pc-windows-gnu`
+- MinGW-w64 para cross-compilation
+- Componentes: clippy, rustfmt, rust-src
+- Cargo tools: cargo-watch, cargo-edit, cargo-expand, cargo-tree
+
+**Extensiones VSCode:**
+- rust-analyzer (LSP)
+- CodeLLDB (debugger)
+- crates (gestor de dependencias)
+- Even Better TOML
+
+**Uso:**
+```bash
+./vsc-wslg dood up rust
+
+# Compilar para Linux (por defecto)
+cargo build --release
+
+# Compilar para Windows
+cargo build --target x86_64-pc-windows-gnu --release
+```
+
+### Crear un perfil personalizado
+
+1. Crear el directorio del perfil:
+
+```bash
+mkdir -p profiles/mi-perfil/vscode
+cd profiles/mi-perfil
+```
+
+2. Crear `profile.yml` con metadatos:
+
+```yaml
+name: "Mi Perfil"
+description: "Descripción del perfil"
+version: "1.0.0"
+tags:
+  - tag1
+  - tag2
+```
+
+3. Crear `extensions.list` con extensiones VSCode:
 
 ```
 # Comentarios con almohadilla
@@ -127,34 +233,59 @@ publisher.extension-name
 otro-publisher.otra-extension
 ```
 
-### Perfil incluido: Symfony
-
-El perfil `symfony.extensions` incluye extensiones para desarrollo PHP con Symfony:
-
-- Docker y Dev Containers
-- GitLens
-- Intelephense (PHP IntelliSense)
-- Xdebug
-- Soporte para Symfony y Twig
-- YAML, XML y archivos de entorno
-- PHPUnit y PHP CS Fixer
-
-### Crear un perfil personalizado
-
-1. Crear un archivo en `profiles/` con extensión `.extensions`:
+4. Crear `install.sh` para instalar herramientas del SO:
 
 ```bash
-# profiles/nodejs.extensions
-dbaeumer.vscode-eslint
-esbenp.prettier-vscode
-ms-vscode.vscode-typescript-next
+#!/bin/bash
+set -e
+
+echo "🔧 Instalando herramientas..."
+
+# Actualizar repositorios
+sudo apt-get update -qq
+
+# Instalar paquetes necesarios
+PACKAGES=("git" "curl" "build-essential")
+
+for pkg in "${PACKAGES[@]}"; do
+    if ! dpkg -l "$pkg" 2>/dev/null | grep -q "^ii"; then
+        echo "  → Instalando $pkg"
+        sudo apt-get install -y "$pkg" >/dev/null 2>&1
+    else
+        echo "  ✓ Ya instalado: $pkg"
+    fi
+done
+
+echo "✓ Herramientas instaladas"
 ```
 
-2. Utilizarlo al lanzar:
+5. (Opcional) Crear `vscode/settings.json` con configuraciones:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2
+}
+```
+
+6. Utilizarlo al lanzar:
 
 ```bash
-./vsc-wslg dood up nodejs
+./vsc-wslg dood up mi-perfil
 ```
+
+### Funcionamiento de los perfiles
+
+Al arrancar un contenedor con un perfil:
+
+1. **Instalación del SO**: Ejecuta `install.sh` si existe (con cache basado en hash)
+2. **Configuraciones VSCode**: Aplica settings con merge inteligente (el usuario tiene prioridad)
+3. **Extensiones**: Instala las extensiones listadas en `extensions.list`
+
+El sistema incluye:
+- **Cache de instalaciones**: Solo reinstala si `install.sh` cambia
+- **Validación de seguridad**: Detecta comandos peligrosos en scripts
+- **Merge de settings**: Las configuraciones del perfil no sobreescriben las del usuario
 
 ## Persistencia
 

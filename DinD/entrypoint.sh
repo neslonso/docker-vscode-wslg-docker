@@ -44,29 +44,17 @@ else
     mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
 fi
 
-# === Instalar extensiones según el perfil ===
-if [ -n "$VSCODE_EXTENSIONS_PROFILE" ] && [ -f "/profiles/${VSCODE_EXTENSIONS_PROFILE}.extensions" ]; then
-    echo "📦 Comprobando extensiones del perfil: $VSCODE_EXTENSIONS_PROFILE"
-    
-    # Obtener extensiones ya instaladas (en minúsculas para comparación)
-    INSTALLED=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
-    
-    while IFS= read -r extension || [ -n "$extension" ]; do
-        extension="${extension%$'\r'}"  # Limpiar CRLF
-        [[ -z "$extension" || "$extension" =~ ^[[:space:]]*# ]] && continue
-        
-        # Comparar en minúsculas (los IDs pueden variar en capitalización)
-        ext_lower=$(echo "$extension" | tr '[:upper:]' '[:lower:]')
-        
-        if echo "$INSTALLED" | grep -q "^${ext_lower}$"; then
-            echo "  ✓ Ya instalada: $extension"
-        else
-            echo "  → Instalando: $extension"
-            code --install-extension "$extension" --force || echo "  ✗ Error instalando $extension"
-        fi
-    done < "/profiles/${VSCODE_EXTENSIONS_PROFILE}.extensions"
-    
-    echo "✓ Extensiones listas"
+# === Procesar perfil si está especificado ===
+if [ -n "$VSCODE_EXTENSIONS_PROFILE" ]; then
+    # Cargar librería de funciones de perfiles
+    if [ -f /usr/local/lib/profile-loader.sh ]; then
+        source /usr/local/lib/profile-loader.sh
+
+        # Procesar el perfil completo (instalación SO, configuraciones, extensiones)
+        process_profile "$VSCODE_EXTENSIONS_PROFILE"
+    else
+        echo "⚠ Librería de perfiles no encontrada"
+    fi
 fi
 
 # Workaround para bug de WSLg: las ventanas maximizadas guardan coordenadas

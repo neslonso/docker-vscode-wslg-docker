@@ -1,0 +1,15 @@
+# === Base Docker ===
+ms-azuretools.vscode-docker
+ms-vscode-remote.remote-containers
+
+# === GIT ===
+eamodio.gitlens
+
+# === Rust ===
+rust-lang.rust-analyzer
+vadimcn.vscode-lldb
+serayuzgur.crates
+tamasfe.even-better-toml
+
+# === Markdown (para documentación) ===
+yzhang.markdown-all-in-one

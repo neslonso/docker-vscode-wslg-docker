@@ -1,0 +1,10 @@
+name: "Rust Development with Windows Cross-Compilation"
+version: "1.0.0"
+description: "Entorno completo para desarrollo Rust con soporte para compilación cruzada a Windows"
+author: "VSCode-WSLg Project"
+tags:
+  - rust
+  - systems
+  - performance
+  - cross-compilation
+  - windows
