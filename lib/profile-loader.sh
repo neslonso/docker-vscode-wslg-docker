@@ -1,5 +1,5 @@
 #!/bin/bash
-# Biblioteca de funciones para cargar y procesar perfiles
+# Biblioteca simplificada de funciones para cargar y procesar perfiles
 
 # Colores para output
 COLOR_GREEN='\033[0;32m'
@@ -8,117 +8,93 @@ COLOR_BLUE='\033[0;34m'
 COLOR_RED='\033[0;31m'
 COLOR_RESET='\033[0m'
 
-# Función para verificar si un perfil existe y retornar su tipo
-# Retorna: "directory" si es un perfil nuevo, "" si no existe
+# Función para verificar si un perfil existe
 profile_exists() {
     local profile_name=$1
     local profile_dir="/profiles/${profile_name}"
 
     if [ -d "$profile_dir" ]; then
-        echo "directory"
         return 0
     else
         return 1
     fi
 }
 
-# Función para validar que el script install.sh no contenga comandos peligrosos
-validate_install_script() {
-    local script_path=$1
-
-    # Patrones peligrosos a detectar
-    local dangerous_patterns=(
-        "rm -rf /"
-        "rm -rf /\s"
-        "mkfs"
-        "dd if=.*of=/dev/"
-        "> /dev/sd"
-        "format"
-        "fdisk"
-        "parted"
-    )
-
-    for pattern in "${dangerous_patterns[@]}"; do
-        if grep -qE "$pattern" "$script_path" 2>/dev/null; then
-            echo -e "${COLOR_RED}⚠️  ADVERTENCIA: Patrón peligroso detectado en install.sh: $pattern${COLOR_RESET}"
-            echo -e "${COLOR_RED}   El script no se ejecutará por seguridad.${COLOR_RESET}"
-            return 1
-        fi
-    done
-
-    return 0
-}
-
-# Función para obtener el hash de un archivo
-get_file_hash() {
-    local file_path=$1
-    if [ -f "$file_path" ]; then
-        sha256sum "$file_path" | cut -d' ' -f1
-    else
-        echo ""
-    fi
-}
-
-# Función para verificar si un script ya fue ejecutado (cache)
-is_script_cached() {
-    local script_path=$1
-    local cache_file=$2
-
-    if [ ! -f "$cache_file" ]; then
-        return 1
-    fi
-
-    local current_hash=$(get_file_hash "$script_path")
-    local cached_hash=$(cat "$cache_file" 2>/dev/null)
-
-    if [ "$current_hash" = "$cached_hash" ] && [ -n "$current_hash" ]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Función para guardar el hash del script en cache
-cache_script() {
-    local script_path=$1
-    local cache_file=$2
-
-    local script_hash=$(get_file_hash "$script_path")
-    echo "$script_hash" > "$cache_file"
-}
-
-# Función para ejecutar el script de instalación del SO
-run_install_script() {
+# Función para leer información del perfil y mostrarla
+show_profile_info() {
     local profile_dir=$1
-    local profile_name=$2
-    local install_script="$profile_dir/install.sh"
-    local cache_file="/home/dev/.profile_cache_${profile_name}"
+    local profile_yml="$profile_dir/profile.yml"
 
-    if [ ! -f "$install_script" ]; then
-        return 0
+    if [ ! -f "$profile_yml" ]; then
+        return
     fi
 
-    # Verificar cache
-    if is_script_cached "$install_script" "$cache_file"; then
-        echo -e "${COLOR_GREEN}  ✓ Paquetes ya instalados (cache hit)${COLOR_RESET}"
-        return 0
+    echo -e "${COLOR_BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${COLOR_RESET}"
+
+    # Leer y mostrar información básica
+    local name=$(grep "^name:" "$profile_yml" 2>/dev/null | sed 's/name: *//; s/"//g')
+    local version=$(grep "^version:" "$profile_yml" 2>/dev/null | sed 's/version: *//; s/"//g')
+    local description=$(grep "^description:" "$profile_yml" 2>/dev/null | sed 's/description: *//; s/"//g')
+
+    if [ -n "$name" ]; then
+        echo -e "${COLOR_BLUE}📦 Perfil: ${COLOR_GREEN}${name}${COLOR_RESET}${COLOR_BLUE} v${version}${COLOR_RESET}"
     fi
 
-    # Validar script antes de ejecutar
-    if ! validate_install_script "$install_script"; then
-        echo -e "${COLOR_RED}✗ Script de instalación no pasó la validación de seguridad${COLOR_RESET}"
-        return 1
+    echo -e "${COLOR_BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${COLOR_RESET}"
+
+    if [ -n "$description" ]; then
+        echo -e ""
+        echo -e "${COLOR_BLUE}📋 Descripción:${COLOR_RESET}"
+        echo -e "  $description"
     fi
 
-    # Ejecutar script
-    echo -e "${COLOR_BLUE}🔧 Ejecutando instalación de paquetes del SO...${COLOR_RESET}"
-    if bash "$install_script"; then
-        cache_script "$install_script" "$cache_file"
-        return 0
-    else
-        echo -e "${COLOR_YELLOW}⚠ Error ejecutando install.sh (continuando...)${COLOR_RESET}"
-        return 1
+    # Mostrar información de infraestructura si existe
+    if grep -q "^infrastructure:" "$profile_yml" 2>/dev/null; then
+        echo -e ""
+        local infra_desc=$(sed -n '/^infrastructure:/,/^  description:/ { /description:/ { s/.*description: *//; s/"//g; p } }' "$profile_yml")
+        if [ -n "$infra_desc" ]; then
+            echo -e "${COLOR_BLUE}🐳 Infraestructura:${COLOR_RESET}"
+            echo -e "  $infra_desc"
+        fi
+
+        # Mostrar servicios
+        echo -e ""
+        echo -e "${COLOR_BLUE}📦 Servicios:${COLOR_RESET}"
+        sed -n '/^  services:/,/^  [a-z]/ { /- name:/ { s/.*name: *//; s/"//g; p } }' "$profile_yml" | while read -r service; do
+            echo -e "${COLOR_GREEN}  ✓${COLOR_RESET} $service"
+        done
+
+        # Mostrar pasos siguientes
+        echo -e ""
+        echo -e "${COLOR_BLUE}📝 Pasos siguientes:${COLOR_RESET}"
+        local step_num=1
+        sed -n '/^  next_steps:/,/^  [a-z]/ { /- "/ { s/.*- "//; s/".*//; p } }' "$profile_yml" | while read -r step; do
+            echo -e "  ${step_num}. $step"
+            step_num=$((step_num + 1))
+        done
+
+        # Mostrar comandos disponibles
+        echo -e ""
+        echo -e "${COLOR_BLUE}🛠️  Gestión de infraestructura:${COLOR_RESET}"
+        local manage_script=$(grep "^  manage_script:" "$profile_yml" 2>/dev/null | sed 's/.*manage_script: *//; s/"//g')
+
+        # Leer comandos y sus descripciones
+        sed -n '/^  commands:/,/^[a-z]/ p' "$profile_yml" | grep -A 1 "- name:" | while read -r line; do
+            if echo "$line" | grep -q "- name:"; then
+                cmd_name=$(echo "$line" | sed 's/.*name: *//; s/"//g')
+                read -r desc_line
+                cmd_desc=$(echo "$desc_line" | sed 's/.*description: *//; s/"//g')
+                if [ -n "$manage_script" ] && [ -n "$cmd_name" ]; then
+                    echo -e "  ${COLOR_GREEN}${manage_script} ${cmd_name}${COLOR_RESET} - $cmd_desc"
+                fi
+            fi
+        done
     fi
+
+    echo -e ""
+    echo -e "${COLOR_BLUE}⚡ Lanzando VSCode...${COLOR_RESET}"
+    echo -e "${COLOR_BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${COLOR_RESET}"
+    echo -e ""
 }
 
 # Función para aplicar configuraciones de VSCode
@@ -220,44 +196,34 @@ process_profile() {
     local profile_name=$1
     local profile_dir="/profiles/${profile_name}"
 
-    echo -e "${COLOR_BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${COLOR_RESET}"
-    echo -e "${COLOR_BLUE}📦 Cargando perfil: ${COLOR_GREEN}${profile_name}${COLOR_RESET}"
-    echo -e "${COLOR_BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${COLOR_RESET}"
-
     # Verificar que el perfil existe
-    if ! profile_exists "$profile_name" >/dev/null; then
+    if ! profile_exists "$profile_name"; then
         echo -e "${COLOR_RED}⚠ Perfil '$profile_name' no encontrado${COLOR_RESET}"
         return 1
     fi
 
-    # Mostrar información del perfil si existe profile.yml
-    if [ -f "$profile_dir/profile.yml" ]; then
-        local description=$(grep "^description:" "$profile_dir/profile.yml" 2>/dev/null | cut -d'"' -f2)
-        if [ -n "$description" ]; then
-            echo -e "${COLOR_BLUE}ℹ️  $description${COLOR_RESET}"
-        fi
-    fi
+    # Mostrar información del perfil
+    show_profile_info "$profile_dir"
 
-    echo ""
-
-    # 1. Ejecutar script de instalación del SO
-    run_install_script "$profile_dir" "$profile_name"
-
-    echo ""
-
-    # 2. Aplicar configuraciones de VSCode
+    # Aplicar configuraciones de VSCode
     if [ -d "$profile_dir/vscode" ]; then
         apply_vscode_settings "$profile_dir"
         echo ""
     fi
 
-    # 3. Instalar extensiones de VSCode
-    local extensions_file="$profile_dir/extensions.list"
-    install_vscode_extensions "$extensions_file"
+    # Instalar extensiones de VSCode
+    local extensions_file="$profile_dir/vscode/extensions.list"
+    # Fallback a extensions.list en la raíz para retrocompatibilidad
+    if [ ! -f "$extensions_file" ] && [ -f "$profile_dir/extensions.list" ]; then
+        extensions_file="$profile_dir/extensions.list"
+    fi
 
-    echo ""
+    if [ -f "$extensions_file" ]; then
+        install_vscode_extensions "$extensions_file"
+        echo ""
+    fi
+
     echo -e "${COLOR_GREEN}✓ Perfil '$profile_name' cargado correctamente${COLOR_RESET}"
-    echo -e "${COLOR_BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${COLOR_RESET}"
     echo ""
 
     return 0

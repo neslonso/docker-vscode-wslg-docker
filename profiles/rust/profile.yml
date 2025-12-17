@@ -8,3 +8,28 @@ tags:
   - performance
   - cross-compilation
   - windows
+
+infrastructure:
+  description: "Contenedor Rust con toolchain completo y soporte para cross-compilation a Windows"
+
+  services:
+    - name: "Rust"
+      version: "stable"
+      description: "Rust toolchain con cargo, clippy, rustfmt y targets para Linux y Windows"
+
+  next_steps:
+    - "Levantar infraestructura: ~/vsc-wslg-rust-profile/manage start"
+    - "Crear proyecto: cargo new mi-proyecto"
+    - "Compilar para Linux: cargo build --release"
+    - "Compilar para Windows: cargo build --target x86_64-pc-windows-gnu --release"
+
+  manage_script: "~/vsc-wslg-rust-profile/manage"
+  commands:
+    - name: "start"
+      description: "Levantar contenedor Rust"
+    - name: "stop"
+      description: "Detener contenedor Rust"
+    - name: "shell"
+      description: "Abrir shell en el contenedor Rust"
+    - name: "logs"
+      description: "Ver logs del contenedor"
