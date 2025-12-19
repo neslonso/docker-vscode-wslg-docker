@@ -306,8 +306,6 @@ infrastructure:
 3. **Crear `docker-compose.yml`** para la infraestructura:
 
 ```yaml
-version: '3.8'
-
 services:
   mi-servicio:
     build: ./services/mi-servicio
