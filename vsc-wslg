@@ -68,6 +68,14 @@ profile="$3"
 # Directorio donde vive este script
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 
+# Directorio del proyecto (desde donde se ejecuta este script)
+project_dir="$PWD"
+
+# Nombre del proyecto según la carpeta actual
+raw_name="$(basename "$PWD")"
+safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
+proj_name="vsc_${safe_name}"
+
 # Selección del docker-compose según modo
 case "$mode" in
 	dood)
@@ -93,14 +101,6 @@ if [ -z "$action" ]; then
 	show_help
 	exit 1
 fi
-
-# Directorio del proyecto (desde donde se ejecuta este script)
-project_dir="$PWD"
-
-# Nombre del proyecto según la carpeta actual
-raw_name="$(basename "$PWD")"
-safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
-proj_name="vsc_${safe_name}"
 
 ########################################################################################################################
 # Variables de entorno comunes

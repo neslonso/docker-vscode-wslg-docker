@@ -38,7 +38,7 @@ services:
 volumes:
   # Volúmenes nombrados que Docker gestionará automáticamente
   # El nombre completo será:
-  # {COMPOSE_PROJECT_NAME}_docker-data
+  # {COMPOSE_PROJECT_NAME}_dind-data
   # {COMPOSE_PROJECT_NAME}_vscode-extensions
   # {COMPOSE_PROJECT_NAME}_vscode-config
   dind-data:
