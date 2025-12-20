@@ -53,9 +53,6 @@ RUN useradd -ms /bin/bash dev \
     && chmod 0440 /etc/sudoers.d/dev \
     && usermod -aG docker dev
 
-# Copiar perfiles completos (estructura de directorios)
-COPY --chown=dev:dev profiles/ /profiles/
-
 # Copiar librería de funciones de perfiles
 COPY lib/profile-loader.sh /usr/local/lib/profile-loader.sh
 RUN chmod +x /usr/local/lib/profile-loader.sh

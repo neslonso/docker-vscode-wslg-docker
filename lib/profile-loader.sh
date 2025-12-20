@@ -8,10 +8,9 @@ COLOR_BLUE='\033[0;34m'
 COLOR_RED='\033[0;31m'
 COLOR_RESET='\033[0m'
 
-# Función para verificar si un perfil existe
+# Función para verificar si un perfil existe (path directo)
 profile_exists() {
-    local profile_name=$1
-    local profile_dir="/profiles/${profile_name}"
+    local profile_dir=$1
 
     if [ -d "$profile_dir" ]; then
         return 0
@@ -193,12 +192,11 @@ install_vscode_extensions() {
 
 # Función principal para procesar un perfil completo
 process_profile() {
-    local profile_name=$1
-    local profile_dir="/profiles/${profile_name}"
+    local profile_dir=$1
 
     # Verificar que el perfil existe
-    if ! profile_exists "$profile_name"; then
-        echo -e "${COLOR_RED}⚠ Perfil '$profile_name' no encontrado${COLOR_RESET}"
+    if ! profile_exists "$profile_dir"; then
+        echo -e "${COLOR_RED}⚠ Perfil no encontrado en: $profile_dir${COLOR_RESET}"
         return 1
     fi
 

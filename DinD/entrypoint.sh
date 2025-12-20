@@ -50,8 +50,11 @@ if [ -n "$VSCODE_EXTENSIONS_PROFILE" ]; then
     if [ -f /usr/local/lib/profile-loader.sh ]; then
         source /usr/local/lib/profile-loader.sh
 
-        # Procesar el perfil completo (instalación SO, configuraciones, extensiones)
-        process_profile "$VSCODE_EXTENSIONS_PROFILE"
+        # Path del perfil montado
+        PROFILE_PATH="/home/dev/vsc-wslg-${VSCODE_EXTENSIONS_PROFILE}-profile"
+
+        # Procesar el perfil completo (configuraciones, extensiones)
+        process_profile "$PROFILE_PATH"
     else
         echo "⚠ Librería de perfiles no encontrada"
     fi
