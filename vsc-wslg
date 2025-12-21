@@ -34,17 +34,7 @@ show_help() {
 	for dir in "$script_dir"/profiles/*/; do
 		if [ -d "$dir" ]; then
 			profile_name=$(basename "$dir")
-			# Leer descripción de profile.yml si existe
-			if [ -f "$dir/profile.yml" ]; then
-				desc=$(grep "^description:" "$dir/profile.yml" 2>/dev/null | sed 's/description: *//; s/"//g' || echo "")
-				if [ -n "$desc" ]; then
-					echo -e "  ${magenta}${profile_name}${reset} - ${desc}" >&2
-				else
-					echo -e "  ${magenta}${profile_name}${reset}" >&2
-				fi
-			else
-				echo -e "  ${magenta}${profile_name}${reset}" >&2
-			fi
+			echo -e "  ${magenta}${profile_name}${reset}" >&2
 		fi
 	done
 	echo "" >&2

@@ -1,9 +1,0 @@
-name: "Symfony Development"
-version: "1.0.0"
-description: "Entorno completo para desarrollo PHP con Symfony Framework"
-author: "VSCode-WSLg Project"
-tags:
-  - php
-  - symfony
-  - web
-  - backend

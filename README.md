@@ -35,7 +35,6 @@ Cuando se trabaja en múltiples proyectos con diferentes stacks tecnológicos, m
 │   └── profile-loader.sh    # Carga perfiles y muestra info
 └── profiles/                # Perfiles de desarrollo
     ├── symfony/             # Perfil para Symfony/PHP
-    │   ├── profile.yml      # Metadata + info de infraestructura
     │   ├── docker-compose.yml  # Servicios (PHP, MySQL, Redis)
     │   ├── manage           # Script de gestión
     │   ├── scripts/         # Scripts individuales
@@ -50,7 +49,6 @@ Cuando se trabaja en múltiples proyectos con diferentes stacks tecnológicos, m
     │   │   └── settings.json
     │   └── README.md
     └── rust/                # Perfil para Rust
-        ├── profile.yml
         ├── docker-compose.yml  # Contenedor Rust toolchain
         ├── manage
         ├── scripts/
@@ -177,7 +175,6 @@ Los perfiles permiten configurar entornos completos según el tipo de proyecto. 
 ```
 profiles/
 └── nombre-perfil/
-    ├── profile.yml           # Metadata + info de infraestructura
     ├── docker-compose.yml    # Servicios de infraestructura
     ├── manage                # Script único de gestión
     ├── scripts/              # Scripts individuales
@@ -273,37 +270,7 @@ mkdir -p profiles/mi-perfil/{vscode,services,scripts}
 cd profiles/mi-perfil
 ```
 
-2. **Crear `profile.yml`** con metadata e información:
-
-```yaml
-name: "Mi Perfil"
-version: "1.0.0"
-description: "Descripción del perfil"
-tags:
-  - tag1
-  - tag2
-
-infrastructure:
-  description: "Descripción de la infraestructura"
-
-  services:
-    - name: "Servicio1"
-      version: "1.0"
-      description: "Descripción del servicio"
-
-  next_steps:
-    - "Levantar infraestructura: ~/vsc-wslg-mi-perfil-profile/manage start"
-    - "Otros pasos necesarios"
-
-  manage_script: "~/vsc-wslg-mi-perfil-profile/manage"
-  commands:
-    - name: "start"
-      description: "Levantar servicios"
-    - name: "stop"
-      description: "Detener servicios"
-```
-
-3. **Crear `docker-compose.yml`** para la infraestructura:
+2. **Crear `docker-compose.yml`** para la infraestructura:
 
 ```yaml
 services:
@@ -316,9 +283,9 @@ services:
     restart: unless-stopped
 ```
 
-4. **Crear Dockerfile del servicio** en `services/mi-servicio/Dockerfile`
+3. **Crear Dockerfile del servicio** en `services/mi-servicio/Dockerfile`
 
-5. **Crear script `manage`**:
+4. **Crear script `manage`**:
 
 ```bash
 #!/bin/bash
@@ -333,13 +300,15 @@ case "$1" in
 esac
 ```
 
-6. **Crear scripts** en `scripts/`:
+5. **Crear scripts** en `scripts/`:
    - `start.sh`: docker-compose up
    - `stop.sh`: docker-compose down
 
-7. **Configurar VSCode** en `vscode/`:
+6. **Configurar VSCode** en `vscode/`:
    - `extensions.list`: extensiones a instalar
    - `settings.json`: configuraciones personalizadas
+
+7. **Crear `README.md`** con la documentación del perfil
 
 8. **Utilizarlo:**
 
@@ -351,10 +320,11 @@ esac
 
 Al arrancar VSCode con un perfil:
 
-1. **Muestra información**: Lee `profile.yml` y muestra servicios, pasos siguientes, comandos disponibles
-2. **Monta perfil**: El perfil se monta en `~/vsc-wslg-{perfil}-profile` (read-only)
-3. **Aplica configuraciones**: Merge inteligente de `settings.json` (usuario tiene prioridad)
-4. **Instala extensiones**: Lee `vscode/extensions.list` e instala las necesarias
+1. **Monta perfil**: El perfil se monta en `~/vsc-wslg-{perfil}-profile` (read-only)
+2. **Aplica configuraciones**: Merge inteligente de `settings.json` (usuario tiene prioridad)
+3. **Instala extensiones**: Lee `vscode/extensions.list` e instala las necesarias
+4. **Muestra mensaje**: Indica el perfil activo y la ruta al README.md
+5. **Primera vez**: Abre el README.md automáticamente en VSCode para mostrar la documentación
 
 La infraestructura es **independiente** y se gestiona **manualmente** desde el terminal de VSCode usando los scripts del perfil
 
