@@ -1,0 +1,79 @@
+{
+  // ===== Shell/Bash =====
+  "shellcheck.enable": true,
+  "shellcheck.executablePath": "/usr/bin/shellcheck",
+  "shellcheck.run": "onSave",
+  "shellformat.flag": "-i 2 -ci",
+
+  // ===== YAML =====
+  "yaml.format.enable": true,
+  "yaml.validate": true,
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json": [
+      "docker-compose.yml",
+      "docker-compose.*.yml"
+    ]
+  },
+
+  // ===== Files =====
+  "files.associations": {
+    "vsc-wslg": "shellscript",
+    "manage": "shellscript",
+    "Dockerfile*": "dockerfile",
+    "*.sh": "shellscript"
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true
+  },
+
+  // ===== Editor =====
+  "editor.formatOnSave": true,
+  "editor.rulers": [80, 120],
+  "editor.renderWhitespace": "boundary",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+
+  // ===== Markdown =====
+  "markdown.preview.breaks": true,
+  "markdown.preview.linkify": true,
+
+  // ===== Git =====
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+
+  // ===== Docker =====
+  "docker.commands.build": "docker build --pull --rm -f \"${dockerfile}\" -t \"${tag}\" \"${context}\"",
+  "docker.commands.composeUp": "docker compose up -d",
+  "docker.commands.composeDown": "docker compose down",
+
+  // ===== Terminal =====
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.fontSize": 13,
+
+  // ===== Todo Tree =====
+  "todo-tree.general.tags": [
+    "TODO",
+    "FIXME",
+    "HACK",
+    "NOTE",
+    "XXX"
+  ],
+  "todo-tree.highlights.defaultHighlight": {
+    "gutterIcon": true
+  },
+
+  // ===== Spell Checker =====
+  "cSpell.language": "en,es",
+  "cSpell.enableFiletypes": [
+    "dockerfile",
+    "shellscript",
+    "yaml"
+  ]
+}
