@@ -77,8 +77,8 @@ if [ -f /tmp/vscode_extensions_to_install ]; then
     # Obtener lista de extensiones ya instaladas
     INSTALLED_EXTENSIONS=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
 
-    local installed_count=0
-    local new_count=0
+    installed_count=0
+    new_count=0
 
     while IFS= read -r extension; do
         # Convertir a minúsculas para comparar
