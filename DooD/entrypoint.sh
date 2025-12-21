@@ -70,35 +70,29 @@ fi
     done
 ) &
 
-# === Reorganizar argumentos para extensiones ===
-# Necesitamos: code --no-sandbox --wait --install-extension ext1 ext2 ... /workspace README.md
-# Pero CMD da: code --no-sandbox --wait /workspace
-# Extraer el último argumento (workspace), agregar extensiones, luego reagregar todo
-
-# Guardar el último argumento (el workspace)
-WORKSPACE_ARG="${@: -1}"
-
-# Eliminar el último argumento de $@
-set -- "${@:1:$(($#-1))}"
-
-# === Instalar extensiones ===
+# === Instalar extensiones ANTES de abrir VSCode ===
 if [ -f /tmp/vscode_extensions_to_install ]; then
+    echo "📦 Instalando extensiones..."
     while IFS= read -r extension; do
-        set -- "$@" "--install-extension" "$extension"
+        echo "  → Instalando: $extension"
+        code --install-extension "$extension" --force 2>&1 | grep -v "Installing extensions..."
     done < /tmp/vscode_extensions_to_install
     rm /tmp/vscode_extensions_to_install
+    echo "✓ Extensiones instaladas"
+    echo ""
 fi
 
-# === Abrir README en primera vez ===
+# === Preparar argumentos para abrir VSCode en modo GUI ===
+# Añadir README si es primera vez
 if [ -f /tmp/vscode_open_readme ]; then
     README_PATH=$(cat /tmp/vscode_open_readme)
     rm /tmp/vscode_open_readme
-    # Añadir README
+    echo "👋 Abriendo README: $README_PATH"
     set -- "$@" "$README_PATH"
 fi
 
-# Añadir workspace al final
-set -- "$@" "$WORKSPACE_ARG"
+echo "🚀 Iniciando VSCode GUI..."
+echo "🔍 DEBUG: Comando: $@"
 
 # Al final, ejecutar con el grupo docker activo
 if [ -S /var/run/docker.sock ]; then

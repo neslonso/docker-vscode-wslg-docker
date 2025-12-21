@@ -81,46 +81,28 @@ fi
     done
 ) &
 
-# === Reorganizar argumentos para extensiones ===
-# Necesitamos: code --no-sandbox --wait --install-extension ext1 ext2 ... /workspace README.md
-# Pero CMD da: code --no-sandbox --wait /workspace
-# Extraer el último argumento (workspace), agregar extensiones, luego readdir todo
-
-echo "🔍 DEBUG: Argumentos originales: $@"
-echo "🔍 DEBUG: Número de argumentos: $#"
-
-# Guardar el último argumento (el workspace)
-WORKSPACE_ARG="${@: -1}"
-echo "🔍 DEBUG: Workspace extraído: $WORKSPACE_ARG"
-
-# Eliminar el último argumento de $@
-set -- "${@:1:$(($#-1))}"
-echo "🔍 DEBUG: Argumentos sin workspace: $@"
-
-# === Instalar extensiones ===
+# === Instalar extensiones ANTES de abrir VSCode ===
 if [ -f /tmp/vscode_extensions_to_install ]; then
-    echo "🔍 DEBUG: Archivo de extensiones encontrado"
+    echo "📦 Instalando extensiones..."
     while IFS= read -r extension; do
-        set -- "$@" "--install-extension" "$extension"
+        echo "  → Instalando: $extension"
+        code --install-extension "$extension" --force 2>&1 | grep -v "Installing extensions..."
     done < /tmp/vscode_extensions_to_install
     rm /tmp/vscode_extensions_to_install
-    echo "🔍 DEBUG: Argumentos con extensiones: $@"
+    echo "✓ Extensiones instaladas"
+    echo ""
 fi
 
-# === Abrir README en primera vez ===
+# === Preparar argumentos para abrir VSCode en modo GUI ===
+# Añadir README si es primera vez
 if [ -f /tmp/vscode_open_readme ]; then
     README_PATH=$(cat /tmp/vscode_open_readme)
     rm /tmp/vscode_open_readme
-    echo "🔍 DEBUG: README a abrir: $README_PATH"
-    # Añadir README
+    echo "👋 Abriendo README: $README_PATH"
     set -- "$@" "$README_PATH"
-    echo "🔍 DEBUG: Argumentos con README: $@"
 fi
 
-# Añadir workspace al final
-set -- "$@" "$WORKSPACE_ARG"
-
-echo "🔍 DEBUG: Comando final completo: $@"
-echo "🔍 DEBUG: Ejecutando VSCode..."
+echo "🚀 Iniciando VSCode GUI..."
+echo "🔍 DEBUG: Comando: $@"
 
 exec "$@"
