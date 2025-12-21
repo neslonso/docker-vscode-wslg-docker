@@ -53,8 +53,9 @@ RUN useradd -ms /bin/bash dev \
     && chmod 0440 /etc/sudoers.d/dev \
     && usermod -aG docker dev
 
-# Copiar perfiles de extensiones
-COPY --chown=dev:dev profiles/*.extensions /profiles/
+# Copiar librería de funciones de perfiles
+COPY lib/profile-loader.sh /usr/local/lib/profile-loader.sh
+RUN chmod +x /usr/local/lib/profile-loader.sh
 
 # Copiar y configurar entrypoint
 COPY DinD/entrypoint.sh /usr/local/bin/entrypoint.sh

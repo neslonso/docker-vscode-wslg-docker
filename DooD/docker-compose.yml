@@ -16,14 +16,17 @@ services:
     volumes:
       # Workspace del proyecto
       - ${PROJECT_DIR}:/workspace
-      
+
+      # Perfil montado en home (solo si está definido)
+      - ${PROFILE_DIR}:/home/dev/vsc-wslg-${VSCODE_EXTENSIONS_PROFILE}-profile:ro
+
       # Volúmenes WSLg para GUI
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /mnt/wslg:/mnt/wslg
-      
+
       # Docker socket para DooD
       - /var/run/docker.sock:/var/run/docker.sock
-      
+
       # Persistencia de extensiones y configuración
       # Estos volúmenes son nombrados según el proyecto (via COMPOSE_PROJECT_NAME)
       - vscode-extensions:/home/dev/.vscode

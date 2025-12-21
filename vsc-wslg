@@ -31,8 +31,11 @@ show_help() {
 	echo -e "  ${green}clean${reset}      Parar contenedor y borrar volúmenes" >&2
 	echo "" >&2
 	echo -e "${white}Perfiles disponibles:${reset}" >&2
-	for f in "$script_dir"/profiles/*.extensions; do
-		[ -f "$f" ] && echo -e "  ${magenta}$(basename "$f" .extensions)${reset}" >&2
+	for dir in "$script_dir"/profiles/*/; do
+		if [ -d "$dir" ]; then
+			profile_name=$(basename "$dir")
+			echo -e "  ${magenta}${profile_name}${reset}" >&2
+		fi
 	done
 	echo "" >&2
 	echo -e "${white}Ejemplos:${reset}" >&2
@@ -54,6 +57,14 @@ profile="$3"
 
 # Directorio donde vive este script
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+
+# Directorio del proyecto (desde donde se ejecuta este script)
+project_dir="$PWD"
+
+# Nombre del proyecto según la carpeta actual
+raw_name="$(basename "$PWD")"
+safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
+proj_name="vsc_${safe_name}"
 
 # Selección del docker-compose según modo
 case "$mode" in
@@ -81,20 +92,13 @@ if [ -z "$action" ]; then
 	exit 1
 fi
 
-# Directorio del proyecto (desde donde se ejecuta este script)
-project_dir="$PWD"
-
-# Nombre del proyecto según la carpeta actual
-raw_name="$(basename "$PWD")"
-safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
-proj_name="vsc_${safe_name}"
-
 ########################################################################################################################
 # Variables de entorno comunes
 
 export COMPOSE_PROJECT_NAME="$proj_name"
 export PROJECT_DIR="$project_dir"
 export VSCODE_EXTENSIONS_PROFILE="$profile"
+export PROFILE_DIR="$script_dir/profiles/$profile"
 
 ########################################################################################################################
 # Ejecución

@@ -44,29 +44,20 @@ else
     mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
 fi
 
-# === Instalar extensiones según el perfil ===
-if [ -n "$VSCODE_EXTENSIONS_PROFILE" ] && [ -f "/profiles/${VSCODE_EXTENSIONS_PROFILE}.extensions" ]; then
-    echo "📦 Comprobando extensiones del perfil: $VSCODE_EXTENSIONS_PROFILE"
-    
-    # Obtener extensiones ya instaladas (en minúsculas para comparación)
-    INSTALLED=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
-    
-    while IFS= read -r extension || [ -n "$extension" ]; do
-        extension="${extension%$'\r'}"  # Limpiar CRLF
-        [[ -z "$extension" || "$extension" =~ ^[[:space:]]*# ]] && continue
-        
-        # Comparar en minúsculas (los IDs pueden variar en capitalización)
-        ext_lower=$(echo "$extension" | tr '[:upper:]' '[:lower:]')
-        
-        if echo "$INSTALLED" | grep -q "^${ext_lower}$"; then
-            echo "  ✓ Ya instalada: $extension"
-        else
-            echo "  → Instalando: $extension"
-            code --install-extension "$extension" --force || echo "  ✗ Error instalando $extension"
-        fi
-    done < "/profiles/${VSCODE_EXTENSIONS_PROFILE}.extensions"
-    
-    echo "✓ Extensiones listas"
+# === Procesar perfil si está especificado ===
+if [ -n "$VSCODE_EXTENSIONS_PROFILE" ]; then
+    # Cargar librería de funciones de perfiles
+    if [ -f /usr/local/lib/profile-loader.sh ]; then
+        source /usr/local/lib/profile-loader.sh
+
+        # Path del perfil montado
+        PROFILE_PATH="/home/dev/vsc-wslg-${VSCODE_EXTENSIONS_PROFILE}-profile"
+
+        # Procesar el perfil completo (configuraciones, extensiones)
+        process_profile "$PROFILE_PATH"
+    else
+        echo "⚠ Librería de perfiles no encontrada"
+    fi
 fi
 
 # Workaround para bug de WSLg: las ventanas maximizadas guardan coordenadas
@@ -90,4 +81,56 @@ fi
     done
 ) &
 
-exec "$@"
+# === Instalar extensiones ANTES de abrir VSCode ===
+if [ -f /tmp/vscode_extensions_to_install ]; then
+    echo "📦 Verificando extensiones de VSCode..."
+
+    # Obtener lista de extensiones ya instaladas
+    INSTALLED_EXTENSIONS=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
+
+    installed_count=0
+    new_count=0
+
+    while IFS= read -r extension; do
+        # Convertir a minúsculas para comparar
+        ext_lower=$(echo "$extension" | tr '[:upper:]' '[:lower:]')
+
+        if echo "$INSTALLED_EXTENSIONS" | grep -q "^${ext_lower}$"; then
+            echo "  ✓ Ya instalada: $extension"
+            installed_count=$((installed_count + 1))
+        else
+            echo "  → Instalando: $extension"
+            code --install-extension "$extension" --force 2>&1 | grep -v "Installing extensions..." | grep -v "^$" || true
+            new_count=$((new_count + 1))
+        fi
+    done < /tmp/vscode_extensions_to_install
+
+    rm /tmp/vscode_extensions_to_install
+    echo "✓ Extensiones: $installed_count ya instaladas, $new_count nuevas"
+    echo ""
+fi
+
+# === Guardar README para abrirlo después ===
+README_TO_OPEN=""
+if [ -f /tmp/vscode_open_readme ]; then
+    README_TO_OPEN=$(cat /tmp/vscode_open_readme)
+    rm /tmp/vscode_open_readme
+fi
+
+echo "🚀 Iniciando VSCode GUI..."
+echo "🔍 DEBUG: Comando: $@"
+
+# Lanzar VSCode en background
+"$@" &
+VSCODE_PID=$!
+
+# Si hay README, abrirlo en la ventana de VSCode después de que arranque
+if [ -n "$README_TO_OPEN" ]; then
+    echo "⏳ Esperando a que VSCode arranque..."
+    sleep 3
+    echo "👋 Abriendo README: $README_TO_OPEN"
+    code --reuse-window "$README_TO_OPEN" 2>/dev/null || true
+fi
+
+# Esperar a que VSCode termine
+wait $VSCODE_PID

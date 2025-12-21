@@ -31,8 +31,34 @@ Cuando se trabaja en múltiples proyectos con diferentes stacks tecnológicos, m
 │   ├── Dockerfile-vsc-wslg
 │   ├── docker-compose.yml
 │   └── entrypoint.sh
-└── profiles/                # Perfiles de extensiones
-    └── symfony.extensions
+├── lib/                     # Bibliotecas auxiliares
+│   └── profile-loader.sh    # Carga perfiles y muestra info
+└── profiles/                # Perfiles de desarrollo
+    ├── symfony/             # Perfil para Symfony/PHP
+    │   ├── docker-compose.yml  # Servicios (PHP, MySQL, Redis)
+    │   ├── manage           # Script de gestión
+    │   ├── scripts/         # Scripts individuales
+    │   │   ├── start.sh
+    │   │   ├── stop.sh
+    │   │   └── logs.sh
+    │   ├── services/        # Dockerfiles de servicios
+    │   │   └── php/
+    │   │       └── Dockerfile
+    │   ├── vscode/          # Config de VSCode
+    │   │   ├── extensions.list
+    │   │   └── settings.json
+    │   └── README.md
+    └── rust/                # Perfil para Rust
+        ├── docker-compose.yml  # Contenedor Rust toolchain
+        ├── manage
+        ├── scripts/
+        ├── services/
+        │   └── rust/
+        │       └── Dockerfile
+        ├── vscode/
+        │   ├── extensions.list
+        │   └── settings.json
+        └── README.md
 ```
 
 ## Modos de operación
@@ -115,46 +141,192 @@ Esto siginifica que si lanzas el scripts desde dos directorios con el mismo nomb
 ./vsc-wslg dood clean
 ```
 
-## Perfiles de extensiones
+## Perfiles de desarrollo
 
-Los perfiles permiten preinstalar conjuntos de extensiones según el tipo de proyecto. Se definen en archivos `.extensions` dentro del directorio `profiles/`.
+Los perfiles permiten configurar entornos completos según el tipo de proyecto. Cada perfil incluye:
 
-### Formato del archivo
+- **VSCode**: Extensiones y configuraciones personalizadas
+- **Infraestructura**: Servicios separados (bases de datos, toolchains, etc.) gestionados con docker-compose
+- **Scripts de gestión**: Comandos para iniciar/detener/gestionar los servicios
+- **Metadatos**: Descripción, versión, información para el usuario
+
+### Arquitectura de perfiles
 
 ```
-# Comentarios con almohadilla
-publisher.extension-name
-otro-publisher.otra-extension
+┌─────────────────────────────────────────────────┐
+│  VSCode Container (GUI)                         │
+│  - Solo VSCode + extensiones                    │
+│  - No contiene toolchains ni servicios          │
+│  - Monta: ~/vsc-wslg-{perfil}-profile (RO)     │
+└────────────────┬────────────────────────────────┘
+                 │
+                 │ Acceso via docker-compose
+                 ↓
+┌─────────────────────────────────────────────────┐
+│  Infraestructura del Perfil                     │
+│  - PHP, MySQL, Redis (Symfony)                  │
+│  - Rust toolchain (Rust)                        │
+│  - Servicios específicos del proyecto           │
+└─────────────────────────────────────────────────┘
 ```
 
-### Perfil incluido: Symfony
+### Estructura de un perfil
 
-El perfil `symfony.extensions` incluye extensiones para desarrollo PHP con Symfony:
+```
+profiles/
+└── nombre-perfil/
+    ├── docker-compose.yml    # Servicios de infraestructura
+    ├── manage                # Script único de gestión
+    ├── scripts/              # Scripts individuales
+    │   ├── start.sh
+    │   ├── stop.sh
+    │   └── logs.sh
+    ├── services/             # Dockerfiles de servicios
+    │   └── servicio/
+    │       └── Dockerfile
+    ├── vscode/               # Configuraciones VSCode
+    │   ├── extensions.list
+    │   └── settings.json
+    └── README.md             # Documentación del perfil
+```
 
-- Docker y Dev Containers
-- GitLens
-- Intelephense (PHP IntelliSense)
-- Xdebug
+### Perfiles incluidos
+
+#### Symfony (PHP)
+
+Stack completo para desarrollo PHP con Symfony Framework.
+
+**Infraestructura (servicios separados):**
+- PHP 8.2-fpm con Composer y Symfony CLI
+- MySQL 8.0
+- Redis 7
+
+**Extensiones VSCode:**
+- PHP IntelliSense, Xdebug, DocBlocker
 - Soporte para Symfony y Twig
-- YAML, XML y archivos de entorno
+- YAML, XML, archivos de entorno
 - PHPUnit y PHP CS Fixer
+- GitLens, Docker
+
+**Uso:**
+```bash
+# 1. Levantar VSCode
+./vsc-wslg dood up symfony
+
+# 2. Desde el terminal de VSCode, levantar infraestructura
+~/vsc-wslg-symfony-profile/manage start
+
+# 3. Trabajar normalmente
+composer install
+bin/console doctrine:migrations:migrate
+```
+
+**Gestión:**
+```bash
+~/vsc-wslg-symfony-profile/manage {start|stop|restart|logs|status}
+```
+
+#### Rust
+
+Entorno para desarrollo Rust con soporte para compilación cruzada a Windows.
+
+**Infraestructura (servicio separado):**
+- Contenedor Rust con toolchain completo
+- Targets: Linux y Windows (x86_64-pc-windows-gnu)
+- MinGW-w64 para cross-compilation
+- Componentes: clippy, rustfmt, rust-src
+- Cargo tools: watch, edit, expand, tree
+
+**Extensiones VSCode:**
+- rust-analyzer (LSP)
+- CodeLLDB (debugger)
+- crates (gestor de dependencias)
+- Even Better TOML
+
+**Uso:**
+```bash
+# 1. Levantar VSCode
+./vsc-wslg dood up rust
+
+# 2. Desde el terminal de VSCode, levantar contenedor Rust
+~/vsc-wslg-rust-profile/manage start
+
+# 3. Compilar
+cargo build --release                                # Linux
+cargo build --target x86_64-pc-windows-gnu --release # Windows
+```
+
+**Gestión:**
+```bash
+~/vsc-wslg-rust-profile/manage {start|stop|restart|logs|shell|status}
+```
 
 ### Crear un perfil personalizado
 
-1. Crear un archivo en `profiles/` con extensión `.extensions`:
+1. **Crear estructura base:**
 
 ```bash
-# profiles/nodejs.extensions
-dbaeumer.vscode-eslint
-esbenp.prettier-vscode
-ms-vscode.vscode-typescript-next
+mkdir -p profiles/mi-perfil/{vscode,services,scripts}
+cd profiles/mi-perfil
 ```
 
-2. Utilizarlo al lanzar:
+2. **Crear `docker-compose.yml`** para la infraestructura:
+
+```yaml
+services:
+  mi-servicio:
+    build: ./services/mi-servicio
+    container_name: ${COMPOSE_PROJECT_NAME:-miperfil}_servicio
+    volumes:
+      - ${WORKSPACE_DIR:-/workspace}:/workspace:cached
+    working_dir: /workspace
+    restart: unless-stopped
+```
+
+3. **Crear Dockerfile del servicio** en `services/mi-servicio/Dockerfile`
+
+4. **Crear script `manage`**:
 
 ```bash
-./vsc-wslg dood up nodejs
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_DIR="/workspace"
+export WORKSPACE_DIR COMPOSE_PROJECT_NAME
+
+case "$1" in
+    start) bash "$SCRIPT_DIR/scripts/start.sh" ;;
+    stop) bash "$SCRIPT_DIR/scripts/stop.sh" ;;
+    *) echo "Uso: $0 {start|stop}"; exit 1 ;;
+esac
 ```
+
+5. **Crear scripts** en `scripts/`:
+   - `start.sh`: docker-compose up
+   - `stop.sh`: docker-compose down
+
+6. **Configurar VSCode** en `vscode/`:
+   - `extensions.list`: extensiones a instalar
+   - `settings.json`: configuraciones personalizadas
+
+7. **Crear `README.md`** con la documentación del perfil
+
+8. **Utilizarlo:**
+
+```bash
+./vsc-wslg dood up mi-perfil
+```
+
+### Funcionamiento de los perfiles
+
+Al arrancar VSCode con un perfil:
+
+1. **Monta perfil**: El perfil se monta en `~/vsc-wslg-{perfil}-profile` (read-only)
+2. **Aplica configuraciones**: Merge inteligente de `settings.json` (usuario tiene prioridad)
+3. **Instala extensiones**: Lee `vscode/extensions.list` e instala las necesarias
+4. **Muestra mensaje**: Indica el perfil activo y la ruta al README.md
+5. **Primera vez**: Abre el README.md automáticamente en VSCode para mostrar la documentación
+
+La infraestructura es **independiente** y se gestiona **manualmente** desde el terminal de VSCode usando los scripts del perfil
 
 ## Persistencia
 

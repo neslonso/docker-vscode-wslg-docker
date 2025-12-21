@@ -1,0 +1,17 @@
+services:
+  # Contenedor Rust con toolchain completo
+  rust:
+    build: ./services/rust
+    container_name: ${COMPOSE_PROJECT_NAME:-rust}_toolchain
+    volumes:
+      - ${WORKSPACE_DIR:-/workspace}:/workspace:cached
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-git:/usr/local/cargo/git
+    working_dir: /workspace
+    restart: unless-stopped
+    # Mantener el contenedor en ejecución
+    command: tail -f /dev/null
+
+volumes:
+  cargo-registry:
+  cargo-git:
