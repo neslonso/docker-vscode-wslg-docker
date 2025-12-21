@@ -81,6 +81,17 @@ fi
     done
 ) &
 
+# === Reorganizar argumentos para extensiones ===
+# Necesitamos: code --no-sandbox --wait --install-extension ext1 ext2 ... /workspace README.md
+# Pero CMD da: code --no-sandbox --wait /workspace
+# Extraer el último argumento (workspace), agregar extensiones, luego readdir todo
+
+# Guardar el último argumento (el workspace)
+WORKSPACE_ARG="${@: -1}"
+
+# Eliminar el último argumento de $@
+set -- "${@:1:$(($#-1))}"
+
 # === Instalar extensiones ===
 if [ -f /tmp/vscode_extensions_to_install ]; then
     while IFS= read -r extension; do
@@ -93,8 +104,11 @@ fi
 if [ -f /tmp/vscode_open_readme ]; then
     README_PATH=$(cat /tmp/vscode_open_readme)
     rm /tmp/vscode_open_readme
-    # Añadir README a los argumentos de VSCode
+    # Añadir README
     set -- "$@" "$README_PATH"
 fi
+
+# Añadir workspace al final
+set -- "$@" "$WORKSPACE_ARG"
 
 exec "$@"
