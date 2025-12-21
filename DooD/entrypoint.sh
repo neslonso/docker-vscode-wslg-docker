@@ -70,6 +70,14 @@ fi
     done
 ) &
 
+# === Abrir README en primera vez ===
+if [ -f /tmp/vscode_open_readme ]; then
+    README_PATH=$(cat /tmp/vscode_open_readme)
+    rm /tmp/vscode_open_readme
+    # Añadir README a los argumentos de VSCode
+    set -- "$@" "$README_PATH"
+fi
+
 # Al final, ejecutar con el grupo docker activo
 if [ -S /var/run/docker.sock ]; then
     exec sg docker -c "$*"
