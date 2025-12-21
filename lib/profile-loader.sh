@@ -3,6 +3,7 @@
 
 # Colores para output
 COLOR_GREEN='\033[0;32m'
+COLOR_YELLOW='\033[1;33m'
 COLOR_BLUE='\033[0;34m'
 COLOR_RED='\033[0;31m'
 COLOR_RESET='\033[0m'
@@ -44,14 +45,16 @@ apply_vscode_settings() {
 
                 if [ $? -eq 0 ]; then
                     mv "$settings_dir/settings.json.tmp" "$settings_dir/settings.json"
-                    echo -e "${COLOR_GREEN}  ✓ Settings aplicados${COLOR_RESET}"
+					echo -e "${COLOR_GREEN}  ✓ Settings mergeados correctamente${COLOR_RESET}"
                 else
                     # Si falla el merge, usar solo el del perfil
                     cp "$profile_dir/vscode/settings.json" "$settings_dir/settings.json"
+					echo -e "${COLOR_YELLOW}  ⚠ No se pudo hacer merge, usando settings del perfil${COLOR_RESET}"
                 fi
             else
                 # Si no hay jq, simplemente copiar el del perfil
                 cp "$profile_dir/vscode/settings.json" "$settings_dir/settings.json"
+				echo -e "${COLOR_YELLOW}  ⚠ jq no disponible, usando solo settings del perfil${COLOR_RESET}"
             fi
         else
             # No hay settings previos, usar los del perfil
@@ -102,7 +105,7 @@ install_vscode_extensions() {
             if code --install-extension "$extension" --force >/dev/null 2>&1; then
                 ((new_count++))
             else
-                echo -e "  ✗ Error instalando $extension"
+				echo -e "${COLOR_YELLOW}  ✗ Error instalando $extension${COLOR_RESET}"
             fi
         fi
     done < "$extensions_file"
