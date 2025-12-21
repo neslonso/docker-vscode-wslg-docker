@@ -86,29 +86,41 @@ fi
 # Pero CMD da: code --no-sandbox --wait /workspace
 # Extraer el último argumento (workspace), agregar extensiones, luego readdir todo
 
+echo "🔍 DEBUG: Argumentos originales: $@"
+echo "🔍 DEBUG: Número de argumentos: $#"
+
 # Guardar el último argumento (el workspace)
 WORKSPACE_ARG="${@: -1}"
+echo "🔍 DEBUG: Workspace extraído: $WORKSPACE_ARG"
 
 # Eliminar el último argumento de $@
 set -- "${@:1:$(($#-1))}"
+echo "🔍 DEBUG: Argumentos sin workspace: $@"
 
 # === Instalar extensiones ===
 if [ -f /tmp/vscode_extensions_to_install ]; then
+    echo "🔍 DEBUG: Archivo de extensiones encontrado"
     while IFS= read -r extension; do
         set -- "$@" "--install-extension" "$extension"
     done < /tmp/vscode_extensions_to_install
     rm /tmp/vscode_extensions_to_install
+    echo "🔍 DEBUG: Argumentos con extensiones: $@"
 fi
 
 # === Abrir README en primera vez ===
 if [ -f /tmp/vscode_open_readme ]; then
     README_PATH=$(cat /tmp/vscode_open_readme)
     rm /tmp/vscode_open_readme
+    echo "🔍 DEBUG: README a abrir: $README_PATH"
     # Añadir README
     set -- "$@" "$README_PATH"
+    echo "🔍 DEBUG: Argumentos con README: $@"
 fi
 
 # Añadir workspace al final
 set -- "$@" "$WORKSPACE_ARG"
+
+echo "🔍 DEBUG: Comando final completo: $@"
+echo "🔍 DEBUG: Ejecutando VSCode..."
 
 exec "$@"
