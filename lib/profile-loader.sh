@@ -70,21 +70,22 @@ apply_vscode_settings() {
     fi
 }
 
-# Función para instalar extensiones de VSCode
-install_vscode_extensions() {
+# Función para preparar extensiones de VSCode
+prepare_vscode_extensions() {
     local extensions_file=$1
 
     if [ ! -f "$extensions_file" ]; then
         return 0
     fi
 
-    echo -e "${COLOR_BLUE}📦 Instalando extensiones de VSCode...${COLOR_RESET}"
+    echo -e "${COLOR_BLUE}📦 Preparando extensiones de VSCode...${COLOR_RESET}"
 
-    # Obtener lista de extensiones ya instaladas
-    INSTALLED=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    # Escribir lista de extensiones a un archivo temporal
+    # El entrypoint leerá este archivo y pasará las extensiones como argumentos a VSCode
+    local temp_file="/tmp/vscode_extensions_to_install"
+    rm -f "$temp_file"
 
-    local installed_count=0
-    local new_count=0
+    local ext_count=0
 
     while IFS= read -r extension || [ -n "$extension" ]; do
         # Limpiar la línea
@@ -94,23 +95,13 @@ install_vscode_extensions() {
         # Saltar líneas vacías y comentarios
         [[ -z "$extension" || "$extension" =~ ^[[:space:]]*# ]] && continue
 
-        # Convertir a minúsculas para comparar
-        ext_lower=$(echo "$extension" | tr '[:upper:]' '[:lower:]')
-
-        if echo "$INSTALLED" | grep -q "^${ext_lower}$"; then
-            echo -e "${COLOR_GREEN}  ✓ Ya instalada: $extension${COLOR_RESET}"
-            ((installed_count++))
-        else
-            echo -e "  → Instalando: $extension"
-            if code --install-extension "$extension" --force >/dev/null 2>&1; then
-                ((new_count++))
-            else
-				echo -e "${COLOR_YELLOW}  ✗ Error instalando $extension${COLOR_RESET}"
-            fi
-        fi
+        echo "$extension" >> "$temp_file"
+        ((ext_count++))
     done < "$extensions_file"
 
-    echo -e "${COLOR_GREEN}✓ Extensiones: $installed_count ya instaladas, $new_count nuevas${COLOR_RESET}"
+    if [ $ext_count -gt 0 ]; then
+        echo -e "${COLOR_GREEN}  ✓ $ext_count extensiones programadas para instalación${COLOR_RESET}"
+    fi
 }
 
 # Función principal para procesar un perfil completo
@@ -143,7 +134,7 @@ process_profile() {
     fi
 
     if [ -f "$extensions_file" ]; then
-        install_vscode_extensions "$extensions_file"
+        prepare_vscode_extensions "$extensions_file"
     fi
 
     echo ""

@@ -81,6 +81,14 @@ fi
     done
 ) &
 
+# === Instalar extensiones ===
+if [ -f /tmp/vscode_extensions_to_install ]; then
+    while IFS= read -r extension; do
+        set -- "$@" "--install-extension" "$extension"
+    done < /tmp/vscode_extensions_to_install
+    rm /tmp/vscode_extensions_to_install
+fi
+
 # === Abrir README en primera vez ===
 if [ -f /tmp/vscode_open_readme ]; then
     README_PATH=$(cat /tmp/vscode_open_readme)
