@@ -96,7 +96,7 @@ prepare_vscode_extensions() {
         [[ -z "$extension" || "$extension" =~ ^[[:space:]]*# ]] && continue
 
         echo "$extension" >> "$temp_file"
-        ((ext_count++))
+        ext_count=$((ext_count + 1))
     done < "$extensions_file"
 
     if [ $ext_count -gt 0 ]; then
