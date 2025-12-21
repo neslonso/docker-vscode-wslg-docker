@@ -83,13 +83,30 @@ fi
 
 # === Instalar extensiones ANTES de abrir VSCode ===
 if [ -f /tmp/vscode_extensions_to_install ]; then
-    echo "📦 Instalando extensiones..."
+    echo "📦 Verificando extensiones de VSCode..."
+
+    # Obtener lista de extensiones ya instaladas
+    INSTALLED_EXTENSIONS=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
+
+    local installed_count=0
+    local new_count=0
+
     while IFS= read -r extension; do
-        echo "  → Instalando: $extension"
-        code --install-extension "$extension" --force 2>&1 | grep -v "Installing extensions..."
+        # Convertir a minúsculas para comparar
+        ext_lower=$(echo "$extension" | tr '[:upper:]' '[:lower:]')
+
+        if echo "$INSTALLED_EXTENSIONS" | grep -q "^${ext_lower}$"; then
+            echo "  ✓ Ya instalada: $extension"
+            installed_count=$((installed_count + 1))
+        else
+            echo "  → Instalando: $extension"
+            code --install-extension "$extension" --force 2>&1 | grep -v "Installing extensions..." | grep -v "^$" || true
+            new_count=$((new_count + 1))
+        fi
     done < /tmp/vscode_extensions_to_install
+
     rm /tmp/vscode_extensions_to_install
-    echo "✓ Extensiones instaladas"
+    echo "✓ Extensiones: $installed_count ya instaladas, $new_count nuevas"
     echo ""
 fi
 
