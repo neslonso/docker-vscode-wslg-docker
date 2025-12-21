@@ -93,16 +93,27 @@ if [ -f /tmp/vscode_extensions_to_install ]; then
     echo ""
 fi
 
-# === Preparar argumentos para abrir VSCode en modo GUI ===
-# Añadir README si es primera vez
+# === Guardar README para abrirlo después ===
+README_TO_OPEN=""
 if [ -f /tmp/vscode_open_readme ]; then
-    README_PATH=$(cat /tmp/vscode_open_readme)
+    README_TO_OPEN=$(cat /tmp/vscode_open_readme)
     rm /tmp/vscode_open_readme
-    echo "👋 Abriendo README: $README_PATH"
-    set -- "$@" "$README_PATH"
 fi
 
 echo "🚀 Iniciando VSCode GUI..."
 echo "🔍 DEBUG: Comando: $@"
 
-exec "$@"
+# Lanzar VSCode en background
+"$@" &
+VSCODE_PID=$!
+
+# Si hay README, abrirlo en la ventana de VSCode después de que arranque
+if [ -n "$README_TO_OPEN" ]; then
+    echo "⏳ Esperando a que VSCode arranque..."
+    sleep 3
+    echo "👋 Abriendo README: $README_TO_OPEN"
+    code --reuse-window "$README_TO_OPEN" 2>/dev/null || true
+fi
+
+# Esperar a que VSCode termine
+wait $VSCODE_PID
