@@ -2,7 +2,10 @@ services:
   vscode:
     build:
       context: ..
-      dockerfile: DooD/Dockerfile-vsc-wslg
+      dockerfile: docker/Dockerfile.base
+      args:
+        INSTALL_DOCKER_DAEMON: "false"
+        ENTRYPOINT_MODE: "DooD"
     image: vscode-wslg-dood
     shm_size: '1gb' # Más memoria compartida
     environment:

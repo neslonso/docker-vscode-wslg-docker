@@ -2,7 +2,10 @@ services:
   vscode:
     build:
       context: ..
-      dockerfile: DinD/Dockerfile-vsc-wslg
+      dockerfile: docker/Dockerfile.base
+      args:
+        INSTALL_DOCKER_DAEMON: "true"
+        ENTRYPOINT_MODE: "DinD"
     image: vscode-wslg-dind
     shm_size: '1gb' # Más memoria compartida
     privileged: true # Requerido para DinD
