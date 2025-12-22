@@ -1,0 +1,51 @@
+#!/bin/bash
+# Script de gestión de infraestructura para perfil DevOps
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_DIR="/workspace"
+
+# Exportar variables para docker-compose
+export WORKSPACE_DIR
+export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-devops}"
+
+show_help() {
+    echo "Gestión de infraestructura DevOps"
+    echo ""
+    echo "Uso: $0 {start|stop|restart|logs|shell|status}"
+    echo ""
+    echo "Comandos disponibles:"
+    echo "  start    - Levantar contenedor shell-tools"
+    echo "  stop     - Detener contenedor shell-tools"
+    echo "  restart  - Reiniciar contenedor shell-tools"
+    echo "  logs     - Ver logs del contenedor"
+    echo "  shell    - Abrir shell en el contenedor shell-tools"
+    echo "  status   - Ver estado del contenedor"
+    echo ""
+}
+
+case "$1" in
+    start)
+        bash "$SCRIPT_DIR/scripts/start.sh"
+        ;;
+    stop)
+        bash "$SCRIPT_DIR/scripts/stop.sh"
+        ;;
+    restart)
+        bash "$SCRIPT_DIR/scripts/stop.sh"
+        sleep 2
+        bash "$SCRIPT_DIR/scripts/start.sh"
+        ;;
+    logs)
+        bash "$SCRIPT_DIR/scripts/logs.sh" "${@:2}"
+        ;;
+    shell)
+        bash "$SCRIPT_DIR/scripts/shell.sh"
+        ;;
+    status)
+        bash "$SCRIPT_DIR/scripts/status.sh"
+        ;;
+    *)
+        show_help
+        exit 1
+        ;;
+esac

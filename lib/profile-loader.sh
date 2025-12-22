@@ -29,9 +29,19 @@ apply_vscode_settings() {
     # Aplicar settings.json si existe
     if [ -f "$profile_dir/vscode/settings.json" ]; then
         echo -e "${COLOR_BLUE}⚙️  Aplicando configuraciones de VSCode...${COLOR_RESET}"
+        echo -e "${COLOR_BLUE}   DEBUG: Archivo settings: $profile_dir/vscode/settings.json${COLOR_RESET}"
+
+        # Validar que el JSON es válido antes de continuar
+        if ! jq empty "$profile_dir/vscode/settings.json" 2>/dev/null; then
+            echo -e "${COLOR_RED}   ✗ ERROR: settings.json contiene JSON inválido${COLOR_RESET}"
+            echo -e "${COLOR_RED}   Verifica que no tenga comentarios (//) o sintaxis incorrecta${COLOR_RESET}"
+            return 1
+        fi
+        echo -e "${COLOR_GREEN}   ✓ JSON válido${COLOR_RESET}"
 
         # Si existe un settings.json del usuario, hacer merge
         if [ -f "$settings_dir/settings.json" ]; then
+            echo -e "${COLOR_BLUE}   DEBUG: Settings de usuario encontrado, haciendo merge...${COLOR_RESET}"
             # Backup del settings original
             cp "$settings_dir/settings.json" "$settings_dir/settings.json.backup"
 
@@ -41,15 +51,15 @@ apply_vscode_settings() {
                 jq -s '.[0] * .[1]' \
                     "$profile_dir/vscode/settings.json" \
                     "$settings_dir/settings.json.backup" \
-                    > "$settings_dir/settings.json.tmp" 2>/dev/null
+                    > "$settings_dir/settings.json.tmp" 2>&1
 
                 if [ $? -eq 0 ]; then
                     mv "$settings_dir/settings.json.tmp" "$settings_dir/settings.json"
 					echo -e "${COLOR_GREEN}  ✓ Settings mergeados correctamente${COLOR_RESET}"
                 else
                     # Si falla el merge, usar solo el del perfil
+                    echo -e "${COLOR_YELLOW}  ⚠ Error en merge, usando settings del perfil${COLOR_RESET}"
                     cp "$profile_dir/vscode/settings.json" "$settings_dir/settings.json"
-					echo -e "${COLOR_YELLOW}  ⚠ No se pudo hacer merge, usando settings del perfil${COLOR_RESET}"
                 fi
             else
                 # Si no hay jq, simplemente copiar el del perfil
@@ -57,6 +67,7 @@ apply_vscode_settings() {
 				echo -e "${COLOR_YELLOW}  ⚠ jq no disponible, usando solo settings del perfil${COLOR_RESET}"
             fi
         else
+            echo -e "${COLOR_BLUE}   DEBUG: No hay settings previos, aplicando del perfil${COLOR_RESET}"
             # No hay settings previos, usar los del perfil
             cp "$profile_dir/vscode/settings.json" "$settings_dir/settings.json"
             echo -e "${COLOR_GREEN}  ✓ Settings aplicados${COLOR_RESET}"

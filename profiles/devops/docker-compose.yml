@@ -1,0 +1,19 @@
+services:
+  shell-tools:
+    build: ./services/shell-tools
+    container_name: ${COMPOSE_PROJECT_NAME:-devops}_shell-tools
+    volumes:
+      # Workspace compartido
+      - ${WORKSPACE_DIR:-/workspace}:/workspace:cached
+      # Compartir socket Docker para acceso desde el contenedor
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /workspace
+    # Mantener el contenedor corriendo
+    command: tail -f /dev/null
+    restart: unless-stopped
+    networks:
+      - devops
+
+networks:
+  devops:
+    name: ${COMPOSE_PROJECT_NAME:-devops}_network
