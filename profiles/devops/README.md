@@ -14,8 +14,6 @@ Entorno completo para desarrollo de infraestructura, scripting y DevOps.
   - bats-assert - Aserciones para tests
 
 #### Docker
-- **Docker CLI** - Cliente Docker completo
-- **docker-compose** - Orquestación de contenedores
 - **hadolint** (v2.12.0) - Linter para Dockerfiles
 - **dive** (v0.12.0) - Análisis de capas de imágenes Docker
 

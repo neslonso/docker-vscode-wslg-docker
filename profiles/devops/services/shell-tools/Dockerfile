@@ -24,15 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar Docker CLI y docker-compose
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-        docker-ce-cli \
-        docker-compose-plugin \
-    && rm -rf /var/lib/apt/lists/*
-
 # Instalar ShellCheck (linter para bash)
 RUN SHELLCHECK_VERSION="v0.10.0" \
     && curl -sSL "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" \
@@ -60,8 +51,7 @@ RUN YQ_VERSION="v4.40.5" \
 
 # Instalar herramientas Python
 RUN pip3 install --no-cache-dir --break-system-packages \
-    yamllint \
-    docker-compose
+    yamllint
 
 # Instalar bats (Bash Automated Testing System)
 RUN git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats-core \
@@ -87,8 +77,7 @@ RUN useradd -ms /bin/bash dev \
 # Configurar bash para dev
 RUN echo 'export PATH="$PATH:/opt/bats/bin"' >> /home/dev/.bashrc \
     && echo 'export BATS_LIB_PATH="/opt/bats"' >> /home/dev/.bashrc \
-    && echo 'alias ll="ls -lah"' >> /home/dev/.bashrc \
-    && echo 'alias dc="docker compose"' >> /home/dev/.bashrc
+    && echo 'alias ll="ls -lah"' >> /home/dev/.bashrc
 
 USER dev
 WORKDIR /workspace
