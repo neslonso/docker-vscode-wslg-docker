@@ -6,7 +6,13 @@ Este documento presenta un plan exhaustivo de refactorización para mejorar la o
 
 **Objetivo**: Eliminar duplicación de código, mejorar la modularización, establecer patrones consistentes y facilitar el mantenimiento y extensibilidad del proyecto.
 
-**Estado actual**: El proyecto funciona correctamente pero presenta duplicación significativa de código y oportunidades de mejora en la organización.
+**Estado actual**:
+- ✅ **Fase 1 completada**: Dockerfiles consolidados (0% duplicación)
+- ✅ **Mejoras extra**: Manejo elegante de instancia única
+- 🔄 **En progreso**: Análisis de entrypoints para Fase 2
+- ⏳ **Pendiente**: Fases 2-8
+
+**Próximo objetivo recomendado**: **Fase 2 - Unificación de Entrypoints** (alta prioridad, elimina ~120 líneas duplicadas)
 
 ---
 
@@ -107,11 +113,36 @@ lib/
 
 ## 2. Plan de Refactorización Propuesto
 
-### Fase 1: Consolidación de Dockerfiles
+### Fase 1: Consolidación de Dockerfiles ✅ COMPLETADA
 
 **Prioridad**: ALTA
 **Impacto**: Alto - Reduce duplicación del 95%
 **Riesgo**: Bajo - Cambio bien acotado
+**Estado**: ✅ Implementado y probado
+
+**Cambios realizados**:
+- ✅ Creado `docker/Dockerfile.base` con lógica común
+- ✅ Usa build args para personalización (INSTALL_DOCKER_DAEMON, ENTRYPOINT_MODE)
+- ✅ DinD y DooD ahora referencian el Dockerfile base
+- ✅ Reducción de ~132 líneas duplicadas a 0% duplicación
+
+**Archivos modificados**:
+- Creado: `docker/Dockerfile.base`
+- Creado: `docker/README.md`
+- Creado: `docker/test-builds.sh`
+- Modificado: `DinD/docker-compose.yml`
+- Modificado: `DooD/docker-compose.yml`
+- Creado: `CHANGELOG.md`
+
+**Mejoras adicionales implementadas (fuera del plan original)**:
+- ✅ Manejo elegante de instancia única
+  - Función `check_running_instances()` en `vsc-wslg`
+  - Detección automática de instancias corriendo
+  - Prompt interactivo con opciones claras
+  - Auto-cierre de instancia anterior si el usuario elige
+  - Documentado en `SINGLE_INSTANCE.md`
+- ✅ Script de diagnóstico `debug-display.sh` para entender comunicación WSLg
+- ✅ Documentación de limitación arquitectural (mono-instancia)
 
 #### 2.1.1 Crear Dockerfile Base Común
 
