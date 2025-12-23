@@ -108,48 +108,21 @@ fi
 
 echo "🚀 Iniciando VSCode GUI..."
 
-# Aislar IPC de VSCode para evitar conflictos entre contenedores
-# que comparten el mismo display de WSLg
-# Generar un socket IPC único basado en el hostname del contenedor
-export VSCODE_IPC_HOOK_CLI="/tmp/vscode-ipc-$(hostname).sock"
-
-# CRÍTICO: Aislar completamente la instancia de VSCode
-# No usar symlinks - copiar la configuración real para persistencia
-USER_DATA_DIR="/home/dev/.config/Code"
-EXTENSIONS_DIR="/home/dev/.vscode/extensions"
-
-echo "🔧 Socket IPC: $VSCODE_IPC_HOOK_CLI"
-echo "🔧 User Data Dir: $USER_DATA_DIR"
-echo "🔧 Extensions Dir: $EXTENSIONS_DIR"
-echo "🔍 DEBUG: Comando original: $@"
-
-# Construir comando con IPC aislado
-NEW_CMD="code --new-window --no-sandbox --user-data-dir=$USER_DATA_DIR --extensions-dir=$EXTENSIONS_DIR /workspace"
-echo "🔍 DEBUG: Comando modificado: $NEW_CMD"
-
-# Lanzar VSCode en background (con sg docker si es necesario)
-if [ -S /var/run/docker.sock ]; then
-    sg docker -c "$NEW_CMD" &
-else
-    $NEW_CMD &
-fi
-
-# Esperar a que VSCode (proceso Electron) realmente arranque
-sleep 3
-
-# Abrir README si es necesario
+# Abrir README en background si es necesario (antes de lanzar VSCode principal)
 if [ -n "$README_TO_OPEN" ]; then
-    echo "👋 Abriendo README: $README_TO_OPEN"
-    VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code --user-data-dir="$USER_DATA_DIR" --extensions-dir="$EXTENSIONS_DIR" "$README_TO_OPEN" 2>/dev/null || true
+    (
+        sleep 5
+        echo "👋 Abriendo README: $README_TO_OPEN"
+        code "$README_TO_OPEN" 2>/dev/null || true
+    ) &
 fi
 
-# Monitorear proceso VSCode real para mantener contenedor vivo
-echo "🔍 Monitoreando proceso VSCode..."
-while true; do
-    # Buscar procesos de VSCode de este contenedor
-    if ! pgrep -u dev -f "/usr/share/code" > /dev/null 2>&1; then
-        echo "✓ VSCode cerrado, terminando contenedor..."
-        break
-    fi
-    sleep 5
-done
+# Lanzar VSCode con --wait (foreground)
+# Compartimos user-data-dir entre contenedores para permitir múltiples ventanas
+# como en Windows donde todas las ventanas comparten %APPDATA%\Code
+# --wait mantiene el contenedor vivo hasta que se cierre esta ventana específica
+if [ -S /var/run/docker.sock ]; then
+    exec sg docker -c "$*"
+else
+    exec "$@"
+fi
