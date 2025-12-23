@@ -107,19 +107,38 @@ if [ -f /tmp/vscode_open_readme ]; then
 fi
 
 echo "🚀 Iniciando VSCode GUI..."
-echo "🔍 DEBUG: Comando: $@"
 
 # Aislar IPC de VSCode para evitar conflictos entre contenedores
 # que comparten el mismo display de WSLg
 # Generar un socket IPC único basado en el hostname del contenedor
 export VSCODE_IPC_HOOK_CLI="/tmp/vscode-ipc-$(hostname).sock"
+
+# CRÍTICO: Usar user-data-dir único por contenedor
+# El path debe ser diferente para que VSCode no detecte otras instancias
+USER_DATA_DIR="/home/dev/.config/Code-$(hostname)"
+mkdir -p "$USER_DATA_DIR"
+
+# Crear symlink del volumen persistente al directorio único
+# Esto mantiene la persistencia pero con path único
+if [ ! -L "$USER_DATA_DIR" ]; then
+    rm -rf "$USER_DATA_DIR" 2>/dev/null || true
+    ln -sf /home/dev/.config/Code "$USER_DATA_DIR"
+fi
+
 echo "🔧 Socket IPC: $VSCODE_IPC_HOOK_CLI"
+echo "🔧 User Data Dir: $USER_DATA_DIR"
+echo "🔍 DEBUG: Comando original: $@"
+
+# Construir comando con user-data-dir único
+# Reemplazar el user-data-dir del CMD con el único
+NEW_CMD="code --new-window --no-sandbox --user-data-dir=$USER_DATA_DIR /workspace"
+echo "🔍 DEBUG: Comando modificado: $NEW_CMD"
 
 # Lanzar VSCode en background (con sg docker si es necesario)
 if [ -S /var/run/docker.sock ]; then
-    sg docker -c "$*" &
+    sg docker -c "$NEW_CMD" &
 else
-    "$@" &
+    $NEW_CMD &
 fi
 
 # Esperar a que VSCode (proceso Electron) realmente arranque
@@ -128,7 +147,7 @@ sleep 3
 # Abrir README si es necesario
 if [ -n "$README_TO_OPEN" ]; then
     echo "👋 Abriendo README: $README_TO_OPEN"
-    VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code "$README_TO_OPEN" 2>/dev/null || true
+    VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code --user-data-dir="$USER_DATA_DIR" "$README_TO_OPEN" 2>/dev/null || true
 fi
 
 # Monitorear proceso VSCode real para mantener contenedor vivo
