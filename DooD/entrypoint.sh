@@ -122,7 +122,8 @@ if [ -n "$README_TO_OPEN" ]; then
     echo "⏳ Esperando a que VSCode arranque..."
     sleep 3
     echo "👋 Abriendo README: $README_TO_OPEN"
-    code --reuse-window "$README_TO_OPEN" 2>/dev/null || true
+    # Sin --reuse-window para evitar conflictos con otras instancias
+    code "$README_TO_OPEN" 2>/dev/null || true
 fi
 
 # Esperar a que VSCode termine

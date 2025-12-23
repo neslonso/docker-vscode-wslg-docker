@@ -123,4 +123,4 @@ USER dev
 WORKDIR /workspace
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["code", "--no-sandbox", "--wait", "/workspace"]
+CMD ["code", "--new-window", "--no-sandbox", "--wait", "/workspace"]
