@@ -126,17 +126,25 @@ echo "🔍 DEBUG: Comando: $@"
 export VSCODE_IPC_HOOK_CLI="/tmp/vscode-ipc-$(hostname).sock"
 echo "🔧 Socket IPC: $VSCODE_IPC_HOOK_CLI"
 
-# Si hay README, preparar para abrirlo después
+# Lanzar VSCode en background
+"$@" &
+
+# Esperar a que VSCode (proceso Electron) realmente arranque
+sleep 3
+
+# Abrir README si es necesario
 if [ -n "$README_TO_OPEN" ]; then
-    # Lanzar un proceso en background que abrirá el README
-    # después de que VSCode arranque, usando el mismo socket IPC
-    (
-        sleep 5
-        echo "👋 Abriendo README: $README_TO_OPEN"
-        VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code --new-window "$README_TO_OPEN" 2>/dev/null || true
-    ) &
+    echo "👋 Abriendo README: $README_TO_OPEN"
+    VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code "$README_TO_OPEN" 2>/dev/null || true
 fi
 
-# Ejecutar VSCode en foreground (reemplaza este proceso shell)
-# Esto hace que el contenedor termine cuando VSCode se cierre
-exec "$@"
+# Monitorear proceso VSCode real para mantener contenedor vivo
+echo "🔍 Monitoreando proceso VSCode..."
+while true; do
+    # Buscar procesos de VSCode de este contenedor
+    if ! pgrep -u dev -f "/usr/share/code" > /dev/null 2>&1; then
+        echo "✓ VSCode cerrado, terminando contenedor..."
+        break
+    fi
+    sleep 5
+done

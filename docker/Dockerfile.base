@@ -125,4 +125,5 @@ WORKDIR /workspace
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 # Usar user-data-dir único por contenedor para evitar conflictos entre instancias
 # El directorio está en el volumen persistente vscode-config
-CMD ["code", "--new-window", "--no-sandbox", "--user-data-dir=/home/dev/.config/Code", "--wait", "/workspace"]
+# Sin --wait para evitar que el CLI retorne inmediatamente al detectar otras instancias
+CMD ["code", "--new-window", "--no-sandbox", "--user-data-dir=/home/dev/.config/Code", "/workspace"]
