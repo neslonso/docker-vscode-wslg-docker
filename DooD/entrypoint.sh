@@ -113,25 +113,18 @@ echo "🚀 Iniciando VSCode GUI..."
 # Generar un socket IPC único basado en el hostname del contenedor
 export VSCODE_IPC_HOOK_CLI="/tmp/vscode-ipc-$(hostname).sock"
 
-# CRÍTICO: Usar user-data-dir único por contenedor
-# El path debe ser diferente para que VSCode no detecte otras instancias
-USER_DATA_DIR="/home/dev/.config/Code-$(hostname)"
-mkdir -p "$USER_DATA_DIR"
-
-# Crear symlink del volumen persistente al directorio único
-# Esto mantiene la persistencia pero con path único
-if [ ! -L "$USER_DATA_DIR" ]; then
-    rm -rf "$USER_DATA_DIR" 2>/dev/null || true
-    ln -sf /home/dev/.config/Code "$USER_DATA_DIR"
-fi
+# CRÍTICO: Aislar completamente la instancia de VSCode
+# No usar symlinks - copiar la configuración real para persistencia
+USER_DATA_DIR="/home/dev/.config/Code"
+EXTENSIONS_DIR="/home/dev/.vscode/extensions"
 
 echo "🔧 Socket IPC: $VSCODE_IPC_HOOK_CLI"
 echo "🔧 User Data Dir: $USER_DATA_DIR"
+echo "🔧 Extensions Dir: $EXTENSIONS_DIR"
 echo "🔍 DEBUG: Comando original: $@"
 
-# Construir comando con user-data-dir único
-# Reemplazar el user-data-dir del CMD con el único
-NEW_CMD="code --new-window --no-sandbox --user-data-dir=$USER_DATA_DIR /workspace"
+# Construir comando con IPC aislado
+NEW_CMD="code --new-window --no-sandbox --user-data-dir=$USER_DATA_DIR --extensions-dir=$EXTENSIONS_DIR /workspace"
 echo "🔍 DEBUG: Comando modificado: $NEW_CMD"
 
 # Lanzar VSCode en background (con sg docker si es necesario)
@@ -147,7 +140,7 @@ sleep 3
 # Abrir README si es necesario
 if [ -n "$README_TO_OPEN" ]; then
     echo "👋 Abriendo README: $README_TO_OPEN"
-    VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code --user-data-dir="$USER_DATA_DIR" "$README_TO_OPEN" 2>/dev/null || true
+    VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code --user-data-dir="$USER_DATA_DIR" --extensions-dir="$EXTENSIONS_DIR" "$README_TO_OPEN" 2>/dev/null || true
 fi
 
 # Monitorear proceso VSCode real para mantener contenedor vivo
