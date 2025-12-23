@@ -115,16 +115,34 @@ if [ -S /var/run/docker.sock ]; then
 else
     "$@" &
 fi
-VSCODE_PID=$!
 
-# Si hay README, abrirlo en la ventana de VSCode después de que arranque
+# Esperar a que el proceso de VSCode (Electron) arranque
+# El CLI 'code' retorna inmediatamente, pero el proceso real de VSCode tarda un poco
+echo "⏳ Esperando a que VSCode arranque..."
+sleep 3
+
+# Abrir README si es necesario (antes de monitorear procesos)
 if [ -n "$README_TO_OPEN" ]; then
-    echo "⏳ Esperando a que VSCode arranque..."
-    sleep 3
     echo "👋 Abriendo README: $README_TO_OPEN"
     # Sin --reuse-window para evitar conflictos con otras instancias
     code "$README_TO_OPEN" 2>/dev/null || true
 fi
 
-# Esperar a que VSCode termine
-wait $VSCODE_PID
+# Encontrar el PID del proceso VSCode real (Electron/Code - Helper)
+# Buscamos procesos que contengan 'code' y estén corriendo como el usuario actual
+echo "🔍 Monitoreando proceso VSCode..."
+
+# Loop para mantener el contenedor vivo mientras VSCode esté corriendo
+while true; do
+    # Buscar procesos de VSCode
+    # Puede ser 'code' o 'Code' dependiendo del proceso
+    VSCODE_RUNNING=$(pgrep -u dev -f "/usr/share/code" 2>/dev/null || true)
+
+    if [ -z "$VSCODE_RUNNING" ]; then
+        echo "✓ VSCode cerrado, terminando contenedor..."
+        break
+    fi
+
+    # Esperar antes de volver a verificar
+    sleep 5
+done
