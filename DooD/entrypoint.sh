@@ -1,155 +1,57 @@
 #!/bin/bash
 set -e
 
-# Asegurar permisos correctos en los volúmenes
-sudo chown -R dev:dev /home/dev/.vscode 2>/dev/null || true
-sudo chown -R dev:dev /home/dev/.config/Code 2>/dev/null || true
+# ============================================================================
+# Entrypoint para modo DooD (Docker-out-of-Docker)
+# ============================================================================
+# Este entrypoint:
+# 1. Configura permisos del socket Docker del host
+# 2. Configura VSCode y extensiones
+# 3. Lanza VSCode
+# 4. Monitorea el proceso
 
-# Permisos para Docker socket
-if [ -S /var/run/docker.sock ]; then
-    DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
-    sudo groupadd -g "$DOCKER_GID" docker 2>/dev/null || true
-    sudo usermod -aG "$DOCKER_GID" dev 2>/dev/null || true
-fi
+# Cargar bibliotecas compartidas
+source /usr/local/lib/docker-setup.sh
+source /usr/local/lib/vscode-setup.sh
 
-# === Configuración base de VSCode ===
-SETTINGS_DIR="/home/dev/.config/Code/User"
-SETTINGS_FILE="$SETTINGS_DIR/settings.json"
-mkdir -p "$SETTINGS_DIR"
+# ============================================================================
+# Setup inicial
+# ============================================================================
 
-# Settings que queremos garantizar (el usuario puede sobreescribirlos después)
-DEFAULT_SETTINGS=$(cat <<'EOF'
-{
-  "window.titleBarStyle": "native"
-}
-EOF
-)
+# Configurar permisos en volúmenes de VSCode
+setup_vscode_permissions
 
-if [ ! -f "$SETTINGS_FILE" ]; then
-    echo "$DEFAULT_SETTINGS" > "$SETTINGS_FILE"
-else
-    # Merge: DEFAULT_SETTINGS como base, settings del usuario tienen prioridad
-    jq -s '.[0] * .[1]' <(echo "$DEFAULT_SETTINGS") "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp"
-    mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
-fi
+# DooD: Configurar permisos del socket Docker
+setup_docker_socket_permissions
 
-# === Procesar perfil si está especificado ===
-if [ -n "$VSCODE_EXTENSIONS_PROFILE" ]; then
-    # Cargar librería de funciones de perfiles
-    if [ -f /usr/local/lib/profile-loader.sh ]; then
-        source /usr/local/lib/profile-loader.sh
+# ============================================================================
+# Configuración de VSCode
+# ============================================================================
 
-        # Path del perfil montado
-        PROFILE_PATH="/home/dev/vsc-wslg-${VSCODE_EXTENSIONS_PROFILE}-profile"
+# Settings base de VSCode
+setup_vscode_settings
 
-        # Procesar el perfil completo (configuraciones, extensiones)
-        process_profile "$PROFILE_PATH"
-    else
-        echo "⚠ Librería de perfiles no encontrada"
-    fi
-fi
+# Procesar perfil si está especificado
+process_vscode_profile
 
-# Workaround para bug de WSLg: las ventanas maximizadas guardan coordenadas
-# que al restaurar quedan fuera de pantalla o en posiciones inválidas.
-# Ver: https://github.com/microsoft/wslg/issues/529
-(
-    sleep 2
-    for i in {1..15}; do
-        WID=$(xdotool search --name "Visual Studio Code" 2>/dev/null | head -1)
-        if [ -n "$WID" ]; then
-            xdotool windowunmap "$WID"
-            sleep 0.2
-            xdotool windowsize "$WID" 1024 768
-            sleep 0.2
-            xdotool windowmap "$WID"
-            #xdotool windowmove "$WID" 50 50
-            #xdotool windowactivate "$WID"
-            break
-        fi
-        sleep 1
-    done
-) &
+# Workaround para bug de WSLg (en background)
+apply_wslg_workaround
 
-# === Instalar extensiones ANTES de abrir VSCode ===
-if [ -f /tmp/vscode_extensions_to_install ]; then
-    echo "📦 Verificando extensiones de VSCode..."
+# Instalar extensiones del perfil
+install_vscode_extensions
 
-    # Obtener lista de extensiones ya instaladas
-    INSTALLED_EXTENSIONS=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
+# Preparar README para abrir si es primera vez
+prepare_readme_open
 
-    installed_count=0
-    new_count=0
+# ============================================================================
+# Lanzar VSCode
+# ============================================================================
 
-    while IFS= read -r extension; do
-        # Convertir a minúsculas para comparar
-        ext_lower=$(echo "$extension" | tr '[:upper:]' '[:lower:]')
+launch_vscode "$@"
 
-        if echo "$INSTALLED_EXTENSIONS" | grep -q "^${ext_lower}$"; then
-            echo "  ✓ Ya instalada: $extension"
-            installed_count=$((installed_count + 1))
-        else
-            echo "  → Instalando: $extension"
-            code --install-extension "$extension" --force 2>&1 | grep -v "Installing extensions..." | grep -v "^$" || true
-            new_count=$((new_count + 1))
-        fi
-    done < /tmp/vscode_extensions_to_install
+# ============================================================================
+# Monitoreo
+# ============================================================================
 
-    rm /tmp/vscode_extensions_to_install
-    echo "✓ Extensiones: $installed_count ya instaladas, $new_count nuevas"
-    echo ""
-fi
-
-# === Guardar README para abrirlo después ===
-README_TO_OPEN=""
-if [ -f /tmp/vscode_open_readme ]; then
-    README_TO_OPEN=$(cat /tmp/vscode_open_readme)
-    rm /tmp/vscode_open_readme
-fi
-
-echo "🚀 Iniciando VSCode GUI..."
-
-# Aislar IPC de VSCode para evitar conflictos entre contenedores
-# que comparten el mismo display de WSLg
-# Generar un socket IPC único basado en el hostname del contenedor
-export VSCODE_IPC_HOOK_CLI="/tmp/vscode-ipc-$(hostname).sock"
-
-# CRÍTICO: Aislar completamente la instancia de VSCode
-# No usar symlinks - copiar la configuración real para persistencia
-USER_DATA_DIR="/home/dev/.config/Code"
-EXTENSIONS_DIR="/home/dev/.vscode/extensions"
-
-echo "🔧 Socket IPC: $VSCODE_IPC_HOOK_CLI"
-echo "🔧 User Data Dir: $USER_DATA_DIR"
-echo "🔧 Extensions Dir: $EXTENSIONS_DIR"
-echo "🔍 DEBUG: Comando original: $@"
-
-# Construir comando con IPC aislado
-NEW_CMD="code --new-window --no-sandbox --user-data-dir=$USER_DATA_DIR --extensions-dir=$EXTENSIONS_DIR /workspace"
-echo "🔍 DEBUG: Comando modificado: $NEW_CMD"
-
-# Lanzar VSCode en background (con sg docker si es necesario)
-if [ -S /var/run/docker.sock ]; then
-    sg docker -c "$NEW_CMD" &
-else
-    $NEW_CMD &
-fi
-
-# Esperar a que VSCode (proceso Electron) realmente arranque
-sleep 3
-
-# Abrir README si es necesario
-if [ -n "$README_TO_OPEN" ]; then
-    echo "👋 Abriendo README: $README_TO_OPEN"
-    VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code --user-data-dir="$USER_DATA_DIR" --extensions-dir="$EXTENSIONS_DIR" "$README_TO_OPEN" 2>/dev/null || true
-fi
-
-# Monitorear proceso VSCode real para mantener contenedor vivo
-echo "🔍 Monitoreando proceso VSCode..."
-while true; do
-    # Buscar procesos de VSCode de este contenedor
-    if ! pgrep -u dev -f "/usr/share/code" > /dev/null 2>&1; then
-        echo "✓ VSCode cerrado, terminando contenedor..."
-        break
-    fi
-    sleep 5
-done
+# Mantener contenedor vivo mientras VSCode corre
+monitor_vscode_process
