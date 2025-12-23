@@ -109,40 +109,28 @@ fi
 echo "🚀 Iniciando VSCode GUI..."
 echo "🔍 DEBUG: Comando: $@"
 
-# Lanzar VSCode en background (con sg docker si es necesario)
-if [ -S /var/run/docker.sock ]; then
-    sg docker -c "$*" &
-else
-    "$@" &
-fi
+# Aislar IPC de VSCode para evitar conflictos entre contenedores
+# que comparten el mismo display de WSLg
+# Generar un socket IPC único basado en el hostname del contenedor
+export VSCODE_IPC_HOOK_CLI="/tmp/vscode-ipc-$(hostname).sock"
+echo "🔧 Socket IPC: $VSCODE_IPC_HOOK_CLI"
 
-# Esperar a que el proceso de VSCode (Electron) arranque
-# El CLI 'code' retorna inmediatamente, pero el proceso real de VSCode tarda un poco
-echo "⏳ Esperando a que VSCode arranque..."
-sleep 3
-
-# Abrir README si es necesario (antes de monitorear procesos)
+# Si hay README, preparar para abrirlo después
 if [ -n "$README_TO_OPEN" ]; then
-    echo "👋 Abriendo README: $README_TO_OPEN"
-    # Sin --reuse-window para evitar conflictos con otras instancias
-    code "$README_TO_OPEN" 2>/dev/null || true
+    # Lanzar un proceso en background que abrirá el README
+    # después de que VSCode arranque, usando el mismo socket IPC
+    (
+        sleep 5
+        echo "👋 Abriendo README: $README_TO_OPEN"
+        VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" code --new-window "$README_TO_OPEN" 2>/dev/null || true
+    ) &
 fi
 
-# Encontrar el PID del proceso VSCode real (Electron/Code - Helper)
-# Buscamos procesos que contengan 'code' y estén corriendo como el usuario actual
-echo "🔍 Monitoreando proceso VSCode..."
-
-# Loop para mantener el contenedor vivo mientras VSCode esté corriendo
-while true; do
-    # Buscar procesos de VSCode
-    # Puede ser 'code' o 'Code' dependiendo del proceso
-    VSCODE_RUNNING=$(pgrep -u dev -f "/usr/share/code" 2>/dev/null || true)
-
-    if [ -z "$VSCODE_RUNNING" ]; then
-        echo "✓ VSCode cerrado, terminando contenedor..."
-        break
-    fi
-
-    # Esperar antes de volver a verificar
-    sleep 5
-done
+# Ejecutar VSCode en foreground (reemplaza este proceso shell)
+# Esto hace que el contenedor termine cuando VSCode se cierre
+# Si hay Docker socket, ejecutar con sg para permisos correctos
+if [ -S /var/run/docker.sock ]; then
+    exec sg docker -c "$*"
+else
+    exec "$@"
+fi
