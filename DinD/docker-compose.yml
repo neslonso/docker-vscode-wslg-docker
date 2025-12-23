@@ -33,13 +33,17 @@ services:
       - dind-data:/var/lib/docker
 
       # Persistencia de extensiones y configuración
-      # COMPARTIDOS entre TODOS los contenedores para permitir múltiples ventanas VSCode
-      # Similar a cómo Windows comparte %APPDATA%\Code entre todas las ventanas
-      - ${HOME}/.vscode-wslg/extensions:/home/dev/.vscode
-      - ${HOME}/.vscode-wslg/config:/home/dev/.config/Code
+      # Estos volúmenes son nombrados según el proyecto (via COMPOSE_PROJECT_NAME)
+      - vscode-extensions:/home/dev/.vscode
+      - vscode-config:/home/dev/.config/Code
     restart: "no"
 
 volumes:
-  # Volumen de Docker daemon (aislado por proyecto)
-  # El nombre completo será: {COMPOSE_PROJECT_NAME}_dind-data
+  # Volúmenes nombrados que Docker gestionará automáticamente
+  # El nombre completo será:
+  # {COMPOSE_PROJECT_NAME}_dind-data
+  # {COMPOSE_PROJECT_NAME}_vscode-extensions
+  # {COMPOSE_PROJECT_NAME}_vscode-config
   dind-data:
+  vscode-extensions:
+  vscode-config:

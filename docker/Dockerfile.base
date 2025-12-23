@@ -123,7 +123,7 @@ USER dev
 WORKDIR /workspace
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-# user-data-dir compartido entre TODOS los contenedores (bind mount en host)
-# --wait hace que el CLI espere hasta que cierres ESA ventana específica
-# Permite múltiples ventanas VSCode, cada contenedor espera a su propia ventana
-CMD ["code", "--wait", "--new-window", "--no-sandbox", "--user-data-dir=/home/dev/.config/Code", "/workspace"]
+# Usar user-data-dir único por contenedor para evitar conflictos entre instancias
+# El directorio está en el volumen persistente vscode-config
+# Sin --wait para evitar que el CLI retorne inmediatamente al detectar otras instancias
+CMD ["code", "--new-window", "--no-sandbox", "--user-data-dir=/home/dev/.config/Code", "/workspace"]
