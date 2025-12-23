@@ -4,6 +4,75 @@ set -e
 ########################################################################################################################
 # Funciones
 
+check_running_instances() {
+	# Buscar contenedores vsc_* corriendo (excluyendo el actual)
+	local running=$(docker ps --filter "name=vsc_" --format "{{.Names}}\t{{.Image}}\t{{.Label \"com.docker.compose.project.working_dir\"}}" 2>/dev/null | grep -v "^${proj_name}_")
+
+	if [ -z "$running" ]; then
+		return 0  # No hay instancias, continuar
+	fi
+
+	# Hay instancia(s) corriendo
+	local reset='\033[0m'
+	local yellow='\033[33m'
+	local cyan='\033[36m'
+	local white='\033[97m'
+	local green='\033[32m'
+
+	echo "" >&2
+	echo -e "${yellow}⚠️  Ya hay una instancia de vsc-wslg corriendo:${reset}" >&2
+	echo "" >&2
+
+	# Mostrar detalles de cada instancia
+	while IFS=$'\t' read -r container image workdir; do
+		local project_name="${container%_vscode_*}"
+		local mode_type="DooD"
+		if echo "$image" | grep -q "dind"; then
+			mode_type="DinD"
+		fi
+		echo -e "   ${white}Proyecto:${reset}   $project_name (${mode_type})" >&2
+		echo -e "   ${white}Contenedor:${reset} $container" >&2
+		[ -n "$workdir" ] && echo -e "   ${white}Workspace:${reset}  $workdir" >&2
+		echo "" >&2
+	done <<< "$running"
+
+	echo -e "${white}¿Qué quieres hacer?${reset}" >&2
+	echo -e "  ${green}1)${reset} Cancelar (mantener la instancia existente)" >&2
+	echo -e "  ${green}2)${reset} Cerrar la instancia existente y abrir esta" >&2
+	echo "" >&2
+
+	read -p "Opción [1-2]: " choice
+
+	case "$choice" in
+		1)
+			echo -e "${cyan}✓${reset} Operación cancelada" >&2
+			exit 0
+			;;
+		2)
+			echo -e "${cyan}🛑${reset} Cerrando instancia(s) existente(s)..." >&2
+			# Bajar todas las instancias vsc_*
+			while IFS=$'\t' read -r container _rest; do
+				local project="${container%_vscode_*}"
+				echo "   Bajando $project..." >&2
+				# Determinar el modo y compose file
+				local existing_mode="DooD"
+				docker inspect "$container" 2>/dev/null | grep -q "vscode-wslg-dind" && existing_mode="DinD"
+				local existing_compose="$script_dir/${existing_mode}/docker-compose.yml"
+
+				# Bajar usando el compose file correcto
+				COMPOSE_PROJECT_NAME="$project" docker compose -f "$existing_compose" down 2>/dev/null
+			done <<< "$running"
+			echo -e "${green}✓${reset} Listo, procediendo a abrir nueva instancia..." >&2
+			echo "" >&2
+			return 0  # Continuar con el up
+			;;
+		*)
+			echo -e "${yellow}✗${reset} Opción inválida, cancelando" >&2
+			exit 1
+			;;
+	esac
+}
+
 show_help() {
 	local reset='\033[0m'
 	local cyan='\033[36m'
@@ -109,15 +178,21 @@ case "$action" in
 		docker compose -f "$compose_file" build
 		;;
 	up)
+		# Verificar si hay otras instancias corriendo
+		check_running_instances
 		#COMPOSE_PROJECT_NAME="$proj_name" \
 		#PROJECT_DIR="$project_dir" \
 		docker compose -f "$compose_file" up
 		docker compose -f "$compose_file" down
 		;;
 	upd)
+		# Verificar si hay otras instancias corriendo
+		check_running_instances
 		docker compose -f "$compose_file" up -d
 		;;
 	upd-logs)
+		# Verificar si hay otras instancias corriendo
+		check_running_instances
 		docker compose -f "$compose_file" up -d
 		docker compose -f "$compose_file" logs -f
 		;;
