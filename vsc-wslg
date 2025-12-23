@@ -52,7 +52,14 @@ check_running_instances() {
 			echo -e "${cyan}🛑${reset} Cerrando instancia(s) existente(s)..." >&2
 			# Bajar todas las instancias vsc_*
 			while IFS=$'\t' read -r container _rest; do
-				local project="${container%_vscode_*}"
+				# Obtener el COMPOSE_PROJECT_NAME del label del contenedor
+				local project=$(docker inspect "$container" --format='{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null)
+
+				# Fallback al parsing si no hay label
+				if [ -z "$project" ]; then
+					project="${container%[-_]vscode[-_]*}"
+				fi
+
 				echo "   🔍 DEBUG: Container name: $container" >&2
 				echo "   🔍 DEBUG: Extracted project: $project" >&2
 
@@ -71,7 +78,7 @@ check_running_instances() {
 				echo "   🔍 DEBUG: Running: COMPOSE_PROJECT_NAME=$project docker compose -f $existing_compose down" >&2
 
 				# Bajar usando el compose file correcto
-				COMPOSE_PROJECT_NAME="$project" docker compose -f "$existing_compose" down
+				COMPOSE_PROJECT_NAME="$project" docker compose -f "$existing_compose" down 2>&1 | sed 's/^/      /'
 				local exit_code=$?
 				echo "   🔍 DEBUG: Exit code: $exit_code" >&2
 			done <<< "$running"
