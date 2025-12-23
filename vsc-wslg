@@ -53,14 +53,27 @@ check_running_instances() {
 			# Bajar todas las instancias vsc_*
 			while IFS=$'\t' read -r container _rest; do
 				local project="${container%_vscode_*}"
-				echo "   Bajando $project..." >&2
+				echo "   🔍 DEBUG: Container name: $container" >&2
+				echo "   🔍 DEBUG: Extracted project: $project" >&2
+
 				# Determinar el modo y compose file
 				local existing_mode="DooD"
-				docker inspect "$container" 2>/dev/null | grep -q "vscode-wslg-dind" && existing_mode="DinD"
+				local image_name=$(docker inspect "$container" --format='{{.Config.Image}}' 2>/dev/null)
+				echo "   🔍 DEBUG: Image: $image_name" >&2
+
+				if echo "$image_name" | grep -q "dind"; then
+					existing_mode="DinD"
+				fi
+				echo "   🔍 DEBUG: Mode: $existing_mode" >&2
+
 				local existing_compose="$script_dir/${existing_mode}/docker-compose.yml"
+				echo "   🔍 DEBUG: Compose file: $existing_compose" >&2
+				echo "   🔍 DEBUG: Running: COMPOSE_PROJECT_NAME=$project docker compose -f $existing_compose down" >&2
 
 				# Bajar usando el compose file correcto
-				COMPOSE_PROJECT_NAME="$project" docker compose -f "$existing_compose" down 2>/dev/null
+				COMPOSE_PROJECT_NAME="$project" docker compose -f "$existing_compose" down
+				local exit_code=$?
+				echo "   🔍 DEBUG: Exit code: $exit_code" >&2
 			done <<< "$running"
 			echo -e "${green}✓${reset} Listo, procediendo a abrir nueva instancia..." >&2
 			echo "" >&2
