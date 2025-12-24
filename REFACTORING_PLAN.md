@@ -254,95 +254,47 @@ launch_vscode "$@"
 
 **Reducción**: De 137 líneas x2 → ~120 líneas compartidas + ~40 líneas x2
 
-### Fase 3: Biblioteca Común para Scripts de Perfiles
+### Fase 2.5: Simplificación Radical de Perfiles ✅ COMPLETADA
 
-**Prioridad**: MEDIA
-**Impacto**: Alto - Elimina 80% de duplicación en scripts
-**Riesgo**: Bajo - Mejora sin cambiar funcionalidad
+**Prioridad**: ALTA
+**Impacto**: Alto - Elimina complejidad innecesaria
+**Riesgo**: Bajo - Simplifica arquitectura
+**Estado**: ✅ Implementado
 
-#### 2.3.1 Crear Biblioteca de Gestión de Perfiles
+**Filosofía nueva**: Los perfiles son **solo configuración de VSCode**, no orquestación de servicios.
 
-**Archivo nuevo**: `lib/profile-manager.sh`
+#### Cambios realizados:
 
-```bash
-# Funciones reutilizables:
-profile_start()        # Lógica común de start
-profile_stop()         # Lógica común de stop
-profile_logs()         # Lógica común de logs
-profile_status()       # Lógica común de status
-profile_shell()        # Lógica común de shell
-profile_restart()      # Lógica común de restart
+**Eliminado** (innecesario):
+- ❌ `profiles/*/scripts/` - Scripts de orquestación
+- ❌ `profiles/*/manage` - Comandos de gestión
+- ❌ `profiles/*/docker-compose.yml` - Servicios (van en el proyecto, no en el perfil)
+- ❌ `profiles/*/services/` - Configuración de servicios
 
-# Helpers:
-get_compose_file()
-get_project_name()
-print_service_info()
+**Estructura simplificada**:
+```
+profiles/nombre-perfil/
+├── README.md              # Documentación
+└── vscode/
+    ├── extensions.list    # Extensiones a instalar
+    └── settings.json      # Configuración de VSCode
 ```
 
-#### 2.3.2 Simplificar Scripts de Perfiles
+**Beneficios**:
+- ✅ Perfiles son portables y autocontenidos
+- ✅ Separación clara: perfil = editor, proyecto = infraestructura
+- ✅ Más fácil crear nuevos perfiles (solo 2 archivos)
+- ✅ Sin código duplicado (no hay scripts que duplicar)
+- ✅ Menor superficie de mantenimiento
 
-**Antes** (`profiles/symfony/scripts/start.sh` - 31 líneas):
-```bash
-#!/bin/bash
-set -e
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORKSPACE_DIR="/workspace"
-export WORKSPACE_DIR
-export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-symfony}"
-echo "🚀 Levantando infraestructura Symfony..."
-docker-compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
-echo "✓ Servicios levantados correctamente"
-# ... más líneas de output ...
-```
+**Documentación**:
+- Creado `profiles/README.md` con guía completa de perfiles
+- Explica filosofía de separación de responsabilidades
+- Incluye ejemplos de cómo crear perfiles
+- Tips de uso y troubleshooting
 
-**Después** (`profiles/symfony/scripts/start.sh` - 8 líneas):
-```bash
-#!/bin/bash
-set -e
-
-source /usr/local/lib/profile-manager.sh
-
-PROFILE_NAME="symfony"
-PROFILE_EMOJI="🚀"
-SERVICE_INFO=(
-  "PHP 8.2-fpm    http://localhost"
-  "MySQL 8.0      localhost:3306"
-  "Redis 7        localhost:6379"
-)
-
-profile_start
-```
-
-**Reducción**: De ~31 líneas x3 perfiles → ~120 líneas lib + ~8 líneas x3
-
-#### 2.3.3 Unificar Script `manage`
-
-**Archivo nuevo**: `lib/profile-manage-base.sh`
-
-```bash
-# Lógica común de routing y help
-run_profile_command() {
-  local profile_name=$1
-  local command=$2
-  local script_dir=$3
-
-  case "$command" in
-    start|stop|restart|logs|status|shell)
-      # Routing genérico
-      ;;
-  esac
-}
-```
-
-**Scripts manage simplificados** (de 48 líneas → 12 líneas):
-```bash
-#!/bin/bash
-source /usr/local/lib/profile-manage-base.sh
-
-PROFILE_NAME="symfony"
-AVAILABLE_COMMANDS="start stop restart logs status"
-run_profile_command "$PROFILE_NAME" "$1" "$SCRIPT_DIR"
-```
+**Decisión arquitectural**:
+Si un proyecto necesita servicios (MySQL, Redis, etc.), debe usar su propio `docker-compose.yml` en el workspace del proyecto, no mezclarlo con la configuración del perfil de VSCode.
 
 ### Fase 4: Mejora del Script Principal
 
