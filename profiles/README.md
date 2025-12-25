@@ -14,15 +14,36 @@ A **profile** is simply a VSCode configuration: extensions and specific settings
 - ✅ VSCode extensions list
 - ✅ Specific settings.json
 - ✅ Usage documentation
+- ✅ System tools installation (optional)
 
 ## Profile Structure
 
 ```
 profiles/profile-name/
 ├── README.md              # Profile documentation
+├── setup.sh               # System setup script (optional)
 └── vscode/
     ├── extensions.list    # List of extensions to install
     └── settings.json      # VSCode configuration
+```
+
+### Optional: setup.sh
+
+The `setup.sh` script allows you to install system-level tools needed for development:
+
+- **Purpose**: Install CLI tools, compilers, linters, package managers, etc.
+- **Execution**: Runs once per profile (tracked by flag file)
+- **Permissions**: Has sudo access (dev user has NOPASSWD:ALL)
+- **Re-run**: Delete volumes with `docker compose down -v`
+
+**Example** (DevOps profile):
+```bash
+#!/bin/bash
+set -e
+echo "Installing DevOps tools..."
+sudo apt-get update -qq
+sudo apt-get install -y -qq shellcheck yamllint
+echo "✅ Tools installed!"
 ```
 
 ## Creating a New Profile
@@ -68,11 +89,49 @@ Specific configuration for this profile:
 
 **Note:** These settings are **merged** with user settings. Profile settings take priority.
 
-### 4. Create `README.md`
+### 4. Create `setup.sh` (Optional)
+
+If your profile needs system-level tools, create a setup script:
+
+```bash
+#!/bin/bash
+# profiles/my-profile/setup.sh
+set -e
+
+echo "📦 Installing tools for my-profile..."
+
+# Update package lists
+sudo apt-get update -qq
+
+# Install your tools
+sudo apt-get install -y -qq \
+    tool1 \
+    tool2 \
+    tool3
+
+# Install from other sources
+curl -sSL https://example.com/installer.sh | bash
+
+# Clean up
+sudo apt-get clean
+sudo rm -rf /var/lib/apt/lists/*
+
+echo "✅ Setup completed!"
+```
+
+**Important:**
+- Make it executable: `chmod +x profiles/my-profile/setup.sh`
+- Use `set -e` to fail on errors
+- Use `-qq` flags to reduce output noise
+- Clean up apt cache to save space
+- Runs only once per profile (tracked by flag file)
+
+### 5. Create `README.md`
 
 Document:
 - What the profile is for
 - Which extensions it includes and why
+- Which system tools it installs (if using setup.sh)
 - Usage tips
 - Links to useful resources
 
@@ -85,9 +144,10 @@ cd ~/my-project
 
 The profile:
 1. Mounts at `/home/dev/vsc-wslg-my-profile-profile/` (read-only)
-2. VSCode reads `vscode/extensions.list` and installs extensions
-3. VSCode merges `vscode/settings.json` with your configuration
-4. The README opens automatically on first execution
+2. Runs `setup.sh` if it exists (first time only)
+3. VSCode reads `vscode/extensions.list` and installs extensions
+4. VSCode merges `vscode/settings.json` with your configuration
+5. The README opens automatically on first execution
 
 ## Philosophy: Separation of Responsibilities
 

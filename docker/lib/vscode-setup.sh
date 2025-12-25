@@ -255,6 +255,30 @@ process_profile() {
     echo -e "${COLOR_BLUE}📖 Documentation: ${profile_dir}/README.md${COLOR_RESET}"
     echo ""
 
+    # Run profile setup script if exists (system packages installation)
+    if [ -f "$profile_dir/setup.sh" ]; then
+        echo -e "${COLOR_BLUE}🔧 Running profile setup script...${COLOR_RESET}"
+
+        # Check if already executed
+        local setup_flag="/home/dev/.config/Code/User/.profile_${profile_name}_setup_done"
+
+        if [ -f "$setup_flag" ]; then
+            echo -e "${COLOR_YELLOW}   ⚠ Setup already executed for this profile${COLOR_RESET}"
+            echo -e "${COLOR_YELLOW}   To re-run: rm $setup_flag and restart container${COLOR_RESET}"
+        else
+            # Execute setup script with sudo
+            if bash "$profile_dir/setup.sh"; then
+                echo -e "${COLOR_GREEN}   ✓ Setup completed successfully${COLOR_RESET}"
+                mkdir -p "$(dirname "$setup_flag")"
+                touch "$setup_flag"
+            else
+                echo -e "${COLOR_RED}   ✗ Setup script failed${COLOR_RESET}"
+                return 1
+            fi
+        fi
+        echo ""
+    fi
+
     # Apply VSCode settings
     if [ -d "$profile_dir/vscode" ]; then
         apply_profile_vscode_settings "$profile_dir"
