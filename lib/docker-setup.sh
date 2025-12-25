@@ -2,62 +2,62 @@
 # ============================================================================
 # Docker Setup Library
 # ============================================================================
-# Funciones para configurar Docker en modos DinD (Docker-in-Docker) y
-# DooD (Docker-out-of-Docker)
+# Functions to configure Docker in DinD (Docker-in-Docker) and
+# DooD (Docker-out-of-Docker) modes
 
 ##
-# Inicia el Docker daemon (usado en modo DinD)
+# Starts the Docker daemon (used in DinD mode)
 #
-# Este proceso corre en background y puede tardar unos segundos en estar listo.
-# La función espera hasta 30 segundos a que el daemon responda.
+# This process runs in background and may take a few seconds to be ready.
+# The function waits up to 30 seconds for the daemon to respond.
 #
 # Globals:
 #   None
 # Arguments:
 #   None
 # Outputs:
-#   Mensajes de progreso a stdout
+#   Progress messages to stdout
 # Returns:
-#   0 si el daemon arranca correctamente
-#   1 si el daemon no arranca después del timeout
+#   0 if daemon starts correctly
+#   1 if daemon doesn't start after timeout
 ##
 start_docker_daemon() {
-    echo "🐳 Iniciando Docker daemon..."
+    echo "🐳 Starting Docker daemon..."
     sudo dockerd --host=unix:///var/run/docker.sock &
 
-    # Esperar a que Docker esté listo
+    # Wait for Docker to be ready
     local timeout=30
     for i in $(seq 1 $timeout); do
         if docker info &>/dev/null; then
-            echo "✓ Docker daemon listo"
+            echo "✓ Docker daemon ready"
             return 0
         fi
         sleep 1
     done
 
-    echo "✗ Error: Docker daemon no arrancó después de ${timeout}s"
+    echo "✗ Error: Docker daemon didn't start after ${timeout}s"
     return 1
 }
 
 ##
-# Configura permisos del socket Docker (usado en modo DooD)
+# Configures Docker socket permissions (used in DooD mode)
 #
-# En DooD, el socket de Docker viene del host. Esta función:
-# 1. Detecta el GID del socket
-# 2. Crea un grupo con ese GID si no existe
-# 3. Agrega el usuario 'dev' al grupo
+# In DooD, the Docker socket comes from the host. This function:
+# 1. Detects the socket's GID
+# 2. Creates a group with that GID if it doesn't exist
+# 3. Adds the 'dev' user to the group
 #
-# Esto permite que el usuario 'dev' dentro del contenedor pueda
-# usar el Docker daemon del host sin necesidad de sudo.
+# This allows the 'dev' user inside the container to use
+# the host's Docker daemon without needing sudo.
 #
 # Globals:
 #   None
 # Arguments:
 #   None
 # Outputs:
-#   None (operaciones silenciosas)
+#   None (silent operations)
 # Returns:
-#   0 siempre (errores son silenciados)
+#   0 always (errors are silenced)
 ##
 setup_docker_socket_permissions() {
     if [ -S /var/run/docker.sock ]; then
@@ -68,23 +68,23 @@ setup_docker_socket_permissions() {
 }
 
 ##
-# Ejecuta un comando con permisos de Docker si es necesario
+# Executes a command with Docker permissions if necessary
 #
-# En DooD, algunos comandos necesitan ejecutarse con el grupo 'docker'.
-# Esta función detecta si el socket existe y ejecuta el comando
-# con 'sg docker' (switch group) o directamente.
+# In DooD, some commands need to run with the 'docker' group.
+# This function detects if the socket exists and executes the command
+# with 'sg docker' (switch group) or directly.
 #
-# Uso:
+# Usage:
 #   run_with_docker_perms code --new-window /workspace
 #
 # Globals:
 #   None
 # Arguments:
-#   $@ - Comando completo a ejecutar
+#   $@ - Complete command to execute
 # Outputs:
-#   Output del comando ejecutado
+#   Output of the executed command
 # Returns:
-#   Exit code del comando ejecutado
+#   Exit code of the executed command
 ##
 run_with_docker_perms() {
     if [ -S /var/run/docker.sock ]; then

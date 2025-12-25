@@ -2,56 +2,56 @@
 set -e
 
 # ============================================================================
-# Entrypoint para modo DooD (Docker-out-of-Docker)
+# Entrypoint for DooD (Docker-out-of-Docker) mode
 # ============================================================================
-# Este entrypoint:
-# 1. Configura permisos del socket Docker del host
-# 2. Configura VSCode y extensiones
-# 3. Lanza VSCode
-# 4. Monitorea el proceso
+# This entrypoint:
+# 1. Configures Docker socket permissions from host
+# 2. Configures VSCode and extensions
+# 3. Launches VSCode
+# 4. Monitors the process
 
-# Cargar bibliotecas compartidas
+# Load shared libraries
 source /usr/local/lib/docker-setup.sh
 source /usr/local/lib/vscode-setup.sh
 
 # ============================================================================
-# Setup inicial
+# Initial setup
 # ============================================================================
 
-# Configurar permisos en volúmenes de VSCode
+# Configure permissions on VSCode volumes
 setup_vscode_permissions
 
-# DooD: Configurar permisos del socket Docker
+# DooD: Configure Docker socket permissions
 setup_docker_socket_permissions
 
 # ============================================================================
-# Configuración de VSCode
+# VSCode configuration
 # ============================================================================
 
-# Settings base de VSCode
+# VSCode base settings
 setup_vscode_settings
 
-# Procesar perfil si está especificado
+# Process profile if specified
 process_vscode_profile
 
-# Workaround para bug de WSLg (en background)
+# Workaround for WSLg bug (in background)
 apply_wslg_workaround
 
-# Instalar extensiones del perfil
+# Install profile extensions
 install_vscode_extensions
 
-# Preparar README para abrir si es primera vez
+# Prepare README to open if first time
 prepare_readme_open
 
 # ============================================================================
-# Lanzar VSCode
+# Launch VSCode
 # ============================================================================
 
 launch_vscode "$@"
 
 # ============================================================================
-# Monitoreo
+# Monitoring
 # ============================================================================
 
-# Mantener contenedor vivo mientras VSCode corre
+# Keep container alive while VSCode runs
 monitor_vscode_process
