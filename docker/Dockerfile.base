@@ -107,16 +107,14 @@ RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
 # ============================================================================
 
 # Copiar bibliotecas compartidas
-COPY lib/profile-loader.sh /usr/local/lib/profile-loader.sh
-COPY lib/docker-setup.sh /usr/local/lib/docker-setup.sh
-COPY lib/vscode-setup.sh /usr/local/lib/vscode-setup.sh
-RUN chmod +x /usr/local/lib/profile-loader.sh \
-    && chmod +x /usr/local/lib/docker-setup.sh \
+COPY docker/lib/docker-setup.sh /usr/local/lib/docker-setup.sh
+COPY docker/lib/vscode-setup.sh /usr/local/lib/vscode-setup.sh
+RUN chmod +x /usr/local/lib/docker-setup.sh \
     && chmod +x /usr/local/lib/vscode-setup.sh
 
 # Copiar el entrypoint correspondiente al modo
 # Nota: Los Dockerfiles derivados pueden sobreescribir esto si es necesario
-COPY ${ENTRYPOINT_MODE}/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY docker/modes/${ENTRYPOINT_MODE}/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # ============================================================================

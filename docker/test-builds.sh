@@ -44,26 +44,26 @@ else
 fi
 
 # Test 2: docker-compose.yml actualizados
-if grep -q "docker/Dockerfile.base" "$PROJECT_ROOT/DinD/docker-compose.yml"; then
-    report_test "DinD/docker-compose.yml usa Dockerfile.base" 0
+if grep -q "docker/Dockerfile.base" "$PROJECT_ROOT/docker/modes/dind/docker-compose.yml"; then
+    report_test "docker/modes/dind/docker-compose.yml usa Dockerfile.base" 0
 else
-    report_test "DinD/docker-compose.yml usa Dockerfile.base" 1
+    report_test "docker/modes/dind/docker-compose.yml usa Dockerfile.base" 1
 fi
 
-if grep -q "docker/Dockerfile.base" "$PROJECT_ROOT/DooD/docker-compose.yml"; then
-    report_test "DooD/docker-compose.yml usa Dockerfile.base" 0
+if grep -q "docker/Dockerfile.base" "$PROJECT_ROOT/docker/modes/dood/docker-compose.yml"; then
+    report_test "docker/modes/dood/docker-compose.yml usa Dockerfile.base" 0
 else
-    report_test "DooD/docker-compose.yml usa Dockerfile.base" 1
+    report_test "docker/modes/dood/docker-compose.yml usa Dockerfile.base" 1
 fi
 
 # Test 3: Build args configurados correctamente
-if grep -q 'INSTALL_DOCKER_DAEMON: "true"' "$PROJECT_ROOT/DinD/docker-compose.yml"; then
+if grep -q 'INSTALL_DOCKER_DAEMON: "true"' "$PROJECT_ROOT/docker/modes/dind/docker-compose.yml"; then
     report_test "DinD tiene INSTALL_DOCKER_DAEMON=true" 0
 else
     report_test "DinD tiene INSTALL_DOCKER_DAEMON=true" 1
 fi
 
-if grep -q 'INSTALL_DOCKER_DAEMON: "false"' "$PROJECT_ROOT/DooD/docker-compose.yml"; then
+if grep -q 'INSTALL_DOCKER_DAEMON: "false"' "$PROJECT_ROOT/docker/modes/dood/docker-compose.yml"; then
     report_test "DooD tiene INSTALL_DOCKER_DAEMON=false" 0
 else
     report_test "DooD tiene INSTALL_DOCKER_DAEMON=false" 1
@@ -115,7 +115,7 @@ echo "---"
 if command -v docker &> /dev/null; then
     echo "Construyendo imagen DinD..."
     cd "$PROJECT_ROOT"
-    if docker compose -f DinD/docker-compose.yml build 2>&1 | tee /tmp/dind-build.log; then
+    if docker compose -f docker/modes/dind/docker-compose.yml build 2>&1 | tee /tmp/dind-build.log; then
         report_test "Build DinD exitoso" 0
     else
         report_test "Build DinD exitoso" 1
@@ -124,7 +124,7 @@ if command -v docker &> /dev/null; then
 
     # Test 9: Build DooD
     echo "Construyendo imagen DooD..."
-    if docker compose -f DooD/docker-compose.yml build 2>&1 | tee /tmp/dood-build.log; then
+    if docker compose -f docker/modes/dood/docker-compose.yml build 2>&1 | tee /tmp/dood-build.log; then
         report_test "Build DooD exitoso" 0
     else
         report_test "Build DooD exitoso" 1

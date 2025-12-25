@@ -64,16 +64,16 @@ check_running_instances() {
 				echo "   🔍 DEBUG: Extracted project: $project" >&2
 
 				# Determine mode and compose file
-				local existing_mode="DooD"
+				local existing_mode="dood"
 				local image_name=$(docker inspect "$container" --format='{{.Config.Image}}' 2>/dev/null)
 				echo "   🔍 DEBUG: Image: $image_name" >&2
 
 				if echo "$image_name" | grep -q "dind"; then
-					existing_mode="DinD"
+					existing_mode="dind"
 				fi
 				echo "   🔍 DEBUG: Mode: $existing_mode" >&2
 
-				local existing_compose="$script_dir/${existing_mode}/docker-compose.yml"
+				local existing_compose="$script_dir/docker/modes/${existing_mode}/docker-compose.yml"
 				echo "   🔍 DEBUG: Compose file: $existing_compose" >&2
 				echo "   🔍 DEBUG: Running: COMPOSE_PROJECT_NAME=$project docker compose -f $existing_compose down" >&2
 
@@ -158,10 +158,10 @@ proj_name="vsc_${safe_name}"
 # Select docker-compose according to mode
 case "$mode" in
 	dood)
-		compose_file="$script_dir/DooD/docker-compose.yml"
+		compose_file="$script_dir/docker/modes/dood/docker-compose.yml"
 		;;
 	dind)
-		compose_file="$script_dir/DinD/docker-compose.yml"
+		compose_file="$script_dir/docker/modes/dind/docker-compose.yml"
 		;;
 	*)
 		echo "✗ Unknown mode: $mode" >&2

@@ -1,13 +1,14 @@
 services:
   vscode:
     build:
-      context: ..
+      context: ../../..
       dockerfile: docker/Dockerfile.base
       args:
-        INSTALL_DOCKER_DAEMON: "false"
-        ENTRYPOINT_MODE: "DooD"
-    image: vscode-wslg-dood
+        INSTALL_DOCKER_DAEMON: "true"
+        ENTRYPOINT_MODE: "dind"
+    image: vscode-wslg-dind
     shm_size: '1gb' # Más memoria compartida
+    privileged: true # Requerido para DinD
     environment:
       - DISPLAY
       - WAYLAND_DISPLAY
@@ -27,8 +28,9 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /mnt/wslg:/mnt/wslg
 
-      # Docker socket para DooD
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Persistencia de Docker (imágenes, capas, contenedores)
+      # Aislado por proyecto para evitar conflictos
+      - dind-data:/var/lib/docker
 
       # Persistencia de extensiones y configuración
       # Estos volúmenes son nombrados según el proyecto (via COMPOSE_PROJECT_NAME)
@@ -39,7 +41,9 @@ services:
 volumes:
   # Volúmenes nombrados que Docker gestionará automáticamente
   # El nombre completo será:
+  # {COMPOSE_PROJECT_NAME}_dind-data
   # {COMPOSE_PROJECT_NAME}_vscode-extensions
   # {COMPOSE_PROJECT_NAME}_vscode-config
+  dind-data:
   vscode-extensions:
   vscode-config:
