@@ -1,221 +1,231 @@
-# Plan de Refactorización - docker-vscode-wslg
+# Refactoring Plan - docker-vscode-wslg
 
-## Resumen Ejecutivo
+## Executive Summary
 
-Este documento presenta un plan exhaustivo de refactorización para mejorar la organización, limpieza y mantenibilidad del código del proyecto docker-vscode-wslg-docker.
+This document presents a comprehensive refactoring plan to improve the organization, cleanliness, and maintainability of the docker-vscode-wslg-docker project code.
 
-**Objetivo**: Eliminar duplicación de código, mejorar la modularización, establecer patrones consistentes y facilitar el mantenimiento y extensibilidad del proyecto.
+**Objective**: Eliminate code duplication, improve modularization, establish consistent patterns, and facilitate project maintenance and extensibility.
 
-**Estado actual**:
-- ✅ **Fase 1 completada**: Dockerfiles consolidados (0% duplicación)
-- ✅ **Mejoras extra**: Manejo elegante de instancia única
-- 🔄 **En progreso**: Análisis de entrypoints para Fase 2
-- ⏳ **Pendiente**: Fases 2-8
+**Current status**:
+- ✅ **Phase 1 completed**: Dockerfiles consolidated (0% duplication)
+- ✅ **Phase 2 completed**: Entrypoints unified
+- ✅ **Phase 2.5 completed**: Profiles radically simplified
+- ✅ **Extra improvements**: Elegant single-instance handling
+- ⏳ **Pending**: Phases 4-8 (optional improvements)
 
-**Próximo objetivo recomendado**: **Fase 2 - Unificación de Entrypoints** (alta prioridad, elimina ~120 líneas duplicadas)
+**Next recommended objective**: **Phase 4 - Main Script Improvements** (medium priority, improves maintainability)
 
 ---
 
-## 1. Problemas Identificados
+## 1. Identified Problems
 
-### 1.1 Duplicación de Código Crítica
+### 1.1 Critical Code Duplication
 
 #### Dockerfiles (DinD/DooD)
-- **Ubicación**: `DinD/Dockerfile-vsc-wslg` vs `DooD/Dockerfile-vsc-wslg`
-- **Problema**: 95% del código es idéntico, solo difieren en:
-  - 3-4 líneas para instalar/omitir Docker daemon
-  - Referencia al entrypoint (DinD vs DooD)
-- **Impacto**: Cualquier cambio (actualización de VSCode, dependencias, etc.) debe replicarse manualmente
-- **Líneas duplicadas**: ~60 de 69 líneas
+- **Location**: `DinD/Dockerfile-vsc-wslg` vs `DooD/Dockerfile-vsc-wslg`
+- **Problem**: 95% of code is identical, only differs in:
+  - 3-4 lines to install/omit Docker daemon
+  - Entrypoint reference (DinD vs DooD)
+- **Impact**: Any change (VSCode update, dependencies, etc.) must be replicated manually
+- **Duplicated lines**: ~60 of 69 lines
 
 #### Entrypoints
-- **Ubicación**: `DinD/entrypoint.sh` vs `DooD/entrypoint.sh`
-- **Problema**:
-  - Lógica común duplicada: configuración VSCode, instalación de extensiones, workaround WSLg, procesamiento de perfiles
-  - Solo difieren en: inicio de Docker daemon (DinD) y manejo de permisos del socket (DooD)
-- **Impacto**: Mejoras o fixes deben aplicarse en ambos lugares
-- **Código común**: ~120 de 137 líneas
+- **Location**: `DinD/entrypoint.sh` vs `DooD/entrypoint.sh`
+- **Problem**:
+  - Duplicated common logic: VSCode configuration, extension installation, WSLg workaround, profile processing
+  - Only differ in: Docker daemon startup (DinD) and socket permissions handling (DooD)
+- **Impact**: Improvements or fixes must be applied in both places
+- **Common code**: ~120 of 137 lines
 
-#### Scripts de Perfiles
-- **Ubicación**: `profiles/*/scripts/*.sh`
-- **Problema**: Scripts idénticos con solo cambios en nombres/emojis
-  - `stop.sh`: 10 líneas, 90% idénticas entre perfiles
-  - `logs.sh`: 8 líneas, 90% idénticas
-  - `shell.sh`: 8 líneas, 100% idénticas
-  - `start.sh`: Estructura idéntica, solo difiere en mensajes y validaciones
-- **Impacto**: 12 archivos que podrían ser 3-4 con parámetros
+#### Profile Scripts
+- **Location**: `profiles/*/scripts/*.sh`
+- **Problem**: Identical scripts with only changes in names/emojis
+  - `stop.sh`: 10 lines, 90% identical between profiles
+  - `logs.sh`: 8 lines, 90% identical
+  - `shell.sh`: 8 lines, 100% identical
+  - `start.sh`: Identical structure, only differs in messages and validations
+- **Impact**: 12 files that could be 3-4 with parameters
 
-#### Scripts `manage`
-- **Ubicación**: `profiles/*/manage`
-- **Problema**: Lógica casi idéntica de routing de comandos
-  - 48 líneas por perfil
-  - Solo difieren en comandos disponibles y nombres
-- **Impacto**: Cualquier nuevo comando requiere actualización manual de 3+ archivos
+#### `manage` Scripts
+- **Location**: `profiles/*/manage`
+- **Problem**: Almost identical command routing logic
+  - 48 lines per profile
+  - Only differ in available commands and names
+- **Impact**: Any new command requires manual update of 3+ files
 
-### 1.2 Problemas de Organización
+### 1.2 Organization Problems
 
-#### Falta de Separación de Responsabilidades
-- **vsc-wslg**: Mezcla parsing de argumentos, validación, y ejecución de docker-compose
-- **entrypoints**: Mezclan configuración base, perfiles, instalación de extensiones, workarounds
+#### Lack of Separation of Responsibilities
+- **vsc-wslg**: Mixes argument parsing, validation, and docker-compose execution
+- **entrypoints**: Mix base configuration, profiles, extension installation, workarounds
 
-#### Ausencia de Biblioteca Común
-- No hay funciones compartidas para:
-  - Logging con formato consistente
-  - Validación de precondiciones
-  - Manejo de errores
-  - Operaciones Docker comunes
+#### Absence of Common Library
+- No shared functions for:
+  - Logging with consistent format
+  - Precondition validation
+  - Error handling
+  - Common Docker operations
 
-#### Estructura de Directorios Poco Clara
+#### Unclear Directory Structure
 ```
 lib/
-  └── profile-loader.sh    # ¿Por qué solo este script está en lib/?
+  └── profile-loader.sh    # Why is only this script in lib/?
 ```
-- No hay convención clara de dónde van las bibliotecas compartidas
-- No hay separación entre scripts de usuario y scripts internos
+- No clear convention for where shared libraries go
+- No separation between user scripts and internal scripts
 
-### 1.3 Código Hardcodeado vs Configurable
+### 1.3 Hardcoded vs Configurable Code
 
-#### Valores Hardcodeados
-- Tamaño de ventana WSLg: `1024 768` (línea 73 en entrypoints)
-- Timeouts: `sleep 2`, `sleep 3` dispersos por el código
-- Rutas: `/home/dev/.config/Code/User` repetida múltiples veces
-- Nombres de contenedores: patrón `${COMPOSE_PROJECT_NAME:-nombre}` inconsistente
+#### Hardcoded Values
+- WSLg window size: `1024 768` (line 73 in entrypoints)
+- Timeouts: `sleep 2`, `sleep 3` scattered throughout code
+- Paths: `/home/dev/.config/Code/User` repeated multiple times
+- Container names: inconsistent `${COMPOSE_PROJECT_NAME:-name}` pattern
 
-#### Configuración Dispersa
-- Variables de entorno definidas en múltiples lugares
-- No hay un único punto de configuración
-- Dificulta personalización por usuario
+#### Scattered Configuration
+- Environment variables defined in multiple places
+- No single configuration point
+- Makes user customization difficult
 
-### 1.4 Manejo de Errores Inconsistente
+### 1.4 Inconsistent Error Handling
 
-- Algunos scripts usan `set -e`, otros no
-- Validación de precondiciones inconsistente
-- Mensajes de error con formatos diferentes
-- No hay rollback en operaciones que fallan parcialmente
+- Some scripts use `set -e`, others don't
+- Inconsistent precondition validation
+- Error messages with different formats
+- No rollback for partially failed operations
 
-### 1.5 Inconsistencias entre Perfiles
+### 1.5 Profile Inconsistencies
 
-| Aspecto | symfony | rust | devops |
+| Aspect | symfony | rust | devops |
 |---------|---------|------|--------|
-| Comando `shell` | ✗ | ✓ | ✓ |
-| Comando `status` | ✓ (inline) | ✓ (inline) | ✓ (script) |
-| Script `status.sh` | ✗ | ✗ | ✓ |
-| Formato mensajes | Variado | Variado | Variado |
+| `shell` command | ✗ | ✓ | ✓ |
+| `status` command | ✓ (inline) | ✓ (inline) | ✓ (script) |
+| `status.sh` script | ✗ | ✗ | ✓ |
+| Message format | Varied | Varied | Varied |
 
-### 1.6 Documentación en Código
+### 1.6 Code Documentation
 
-- Comentarios escasos en scripts complejos
-- No hay docstrings en funciones
-- Lógica compleja sin explicación (ej: workaround WSLg)
-- No se documenta por qué se hacen ciertas cosas
+- Scarce comments in complex scripts
+- No docstrings in functions
+- Complex logic without explanation (e.g., WSLg workaround)
+- Doesn't document why certain things are done
 
 ---
 
-## 2. Plan de Refactorización Propuesto
+## 2. Proposed Refactoring Plan
 
-### Fase 1: Consolidación de Dockerfiles ✅ COMPLETADA
+### Phase 1: Dockerfile Consolidation ✅ COMPLETED
 
-**Prioridad**: ALTA
-**Impacto**: Alto - Reduce duplicación del 95%
-**Riesgo**: Bajo - Cambio bien acotado
-**Estado**: ✅ Implementado y probado
+**Priority**: HIGH
+**Impact**: High - Reduces 95% duplication
+**Risk**: Low - Well-defined change
+**Status**: ✅ Implemented and tested
 
-**Cambios realizados**:
-- ✅ Creado `docker/Dockerfile.base` con lógica común
-- ✅ Usa build args para personalización (INSTALL_DOCKER_DAEMON, ENTRYPOINT_MODE)
-- ✅ DinD y DooD ahora referencian el Dockerfile base
-- ✅ Reducción de ~132 líneas duplicadas a 0% duplicación
+**Changes made**:
+- ✅ Created `docker/Dockerfile.base` with common logic
+- ✅ Uses build args for customization (INSTALL_DOCKER_DAEMON, ENTRYPOINT_MODE)
+- ✅ DinD and DooD now reference the base Dockerfile
+- ✅ Reduction from ~132 duplicated lines to 0% duplication
 
-**Archivos modificados**:
-- Creado: `docker/Dockerfile.base`
-- Creado: `docker/README.md`
-- Creado: `docker/test-builds.sh`
-- Modificado: `DinD/docker-compose.yml`
-- Modificado: `DooD/docker-compose.yml`
-- Creado: `CHANGELOG.md`
+**Modified files**:
+- Created: `docker/Dockerfile.base`
+- Created: `docker/README.md`
+- Created: `docker/test-builds.sh`
+- Modified: `DinD/docker-compose.yml`
+- Modified: `DooD/docker-compose.yml`
+- Created: `CHANGELOG.md`
 
-**Mejoras adicionales implementadas (fuera del plan original)**:
-- ✅ Manejo elegante de instancia única
-  - Función `check_running_instances()` en `vsc-wslg`
-  - Detección automática de instancias corriendo
-  - Prompt interactivo con opciones claras
-  - Auto-cierre de instancia anterior si el usuario elige
-  - Documentado en `SINGLE_INSTANCE.md`
-- ✅ Script de diagnóstico `debug-display.sh` para entender comunicación WSLg
-- ✅ Documentación de limitación arquitectural (mono-instancia)
+**Additional improvements implemented (outside original plan)**:
+- ✅ Elegant single-instance handling
+  - `check_running_instances()` function in `vsc-wslg`
+  - Automatic detection of running instances
+  - Interactive prompt with clear options
+  - Auto-close of previous instance if user chooses
+  - Documented in `SINGLE_INSTANCE.md`
+- ✅ Diagnostic script `debug-display.sh` to understand WSLg communication
+- ✅ Documentation of architectural limitation (single-instance)
 
-#### 2.1.1 Crear Dockerfile Base Común
+#### 2.1.1 Create Common Base Dockerfile
 
-**Archivo nuevo**: `docker/Dockerfile.base`
+**New file**: `docker/Dockerfile.base`
 
 ```dockerfile
-# Contiene toda la lógica común:
-# - Imagen base
-# - Dependencias comunes
-# - Instalación VSCode
-# - Usuario dev
-# - Librería profile-loader
-# - ARG para personalización
+# Contains all common logic:
+# - Base image
+# - Common dependencies
+# - VSCode installation
+# - dev user
+# - profile-loader library
+# - ARGs for customization
 ```
 
-**Beneficios**:
-- Un solo lugar para actualizar VSCode, dependencias, etc.
-- Reduces tiempo de build con cache compartida
-- Facilita testing de cambios
+**Benefits**:
+- Single place to update VSCode, dependencies, etc.
+- Reduces build time with shared cache
+- Facilitates testing of changes
 
-#### 2.1.2 Crear Dockerfiles Específicos Minimalistas
+#### 2.1.2 Create Minimalist Specific Dockerfiles
 
 **DinD**: `DinD/Dockerfile-vsc-wslg`
 ```dockerfile
 FROM ../docker/Dockerfile.base
-# Solo instalar Docker daemon + dependencias DinD
-# Copiar entrypoint específico
+# Only install Docker daemon + DinD dependencies
+# Copy specific entrypoint
 ```
 
 **DooD**: `DooD/Dockerfile-vsc-wslg`
 ```dockerfile
 FROM ../docker/Dockerfile.base
-# Solo instalar Docker CLI
-# Copiar entrypoint específico
+# Only install Docker CLI
+# Copy specific entrypoint
 ```
 
-**Reducción**: De 69 líneas x2 → 50 líneas base + 10 líneas x2
+**Reduction**: From 69 lines x2 → 50 base lines + 10 lines x2
 
-### Fase 2: Unificación de Entrypoints
+### Phase 2: Entrypoint Unification ✅ COMPLETED
 
-**Prioridad**: ALTA
-**Impacto**: Alto - Elimina duplicación, facilita mantenimiento
-**Riesgo**: Medio - Requiere testing cuidadoso
+**Priority**: HIGH
+**Impact**: High - Eliminates duplication, facilitates maintenance
+**Risk**: Medium - Requires careful testing
+**Status**: ✅ Implemented and tested
 
-#### 2.2.1 Crear Biblioteca de Funciones Compartidas
+**Changes made**:
+- ✅ Created `lib/vscode-setup.sh` with all VSCode setup functions
+- ✅ Created `lib/docker-setup.sh` with Docker-specific functions
+- ✅ Refactored both entrypoints to use shared libraries
+- ✅ Reduction from 274 total lines to 116 lines (-58%)
+- ✅ All functions documented with docstrings
+- ✅ Zero duplication in business logic
 
-**Archivo nuevo**: `lib/vscode-setup.sh`
+#### 2.2.1 Create Shared Function Library
 
-Contendrá funciones:
+**New file**: `lib/vscode-setup.sh`
+
+Contains functions:
 ```bash
-setup_vscode_permissions()    # Permisos en volúmenes
-setup_vscode_settings()        # Merge de settings.json
-install_vscode_extensions()    # Instalación de extensiones
-apply_wslg_workaround()       # Fix ventana WSLg
-open_profile_readme()         # Abrir README primera vez
+setup_vscode_permissions()    # Permissions on volumes
+setup_vscode_settings()        # Merge settings.json
+install_vscode_extensions()    # Extension installation
+apply_wslg_workaround()       # WSLg window fix
+open_profile_readme()         # Open README first time
 ```
 
-**Archivo nuevo**: `lib/docker-setup.sh`
+**New file**: `lib/docker-setup.sh`
 
 ```bash
-start_docker_daemon()         # Para DinD
-setup_docker_socket_perms()   # Para DooD
-wait_for_docker()            # Esperar a que Docker esté listo
+start_docker_daemon()         # For DinD
+setup_docker_socket_perms()   # For DooD
+wait_for_docker()            # Wait for Docker to be ready
 ```
 
-**Beneficios**:
-- Código testeable de forma unitaria
-- Reutilizable en futuros modos
-- Fácil de mantener y documentar
+**Benefits**:
+- Unit testable code
+- Reusable in future modes
+- Easy to maintain and document
 
-#### 2.2.2 Refactorizar Entrypoints
+#### 2.2.2 Refactor Entrypoints
 
-**DinD/entrypoint.sh** (reducido a ~40 líneas):
+**DinD/entrypoint.sh** (reduced to ~40 lines):
 ```bash
 #!/bin/bash
 set -e
@@ -252,72 +262,72 @@ open_profile_readme
 launch_vscode "$@"
 ```
 
-**Reducción**: De 137 líneas x2 → ~120 líneas compartidas + ~40 líneas x2
+**Reduction**: From 137 lines x2 → ~120 shared lines + ~40 lines x2
 
-### Fase 2.5: Simplificación Radical de Perfiles ✅ COMPLETADA
+### Phase 2.5: Radical Profile Simplification ✅ COMPLETED
 
-**Prioridad**: ALTA
-**Impacto**: Alto - Elimina complejidad innecesaria
-**Riesgo**: Bajo - Simplifica arquitectura
-**Estado**: ✅ Implementado
+**Priority**: HIGH
+**Impact**: High - Eliminates unnecessary complexity
+**Risk**: Low - Simplifies architecture
+**Status**: ✅ Implemented
 
-**Filosofía nueva**: Los perfiles son **solo configuración de VSCode**, no orquestación de servicios.
+**New philosophy**: Profiles are **only VSCode configuration**, not service orchestration.
 
-#### Cambios realizados:
+#### Changes made:
 
-**Eliminado** (innecesario):
-- ❌ `profiles/*/scripts/` - Scripts de orquestación
-- ❌ `profiles/*/manage` - Comandos de gestión
-- ❌ `profiles/*/docker-compose.yml` - Servicios (van en el proyecto, no en el perfil)
-- ❌ `profiles/*/services/` - Configuración de servicios
+**Removed** (unnecessary):
+- ❌ `profiles/*/scripts/` - Orchestration scripts
+- ❌ `profiles/*/manage` - Management commands
+- ❌ `profiles/*/docker-compose.yml` - Services (belong in project, not profile)
+- ❌ `profiles/*/services/` - Service configuration
 
-**Estructura simplificada**:
+**Simplified structure**:
 ```
-profiles/nombre-perfil/
-├── README.md              # Documentación
+profiles/profile-name/
+├── README.md              # Documentation
 └── vscode/
-    ├── extensions.list    # Extensiones a instalar
-    └── settings.json      # Configuración de VSCode
+    ├── extensions.list    # Extensions to install
+    └── settings.json      # VSCode configuration
 ```
 
-**Beneficios**:
-- ✅ Perfiles son portables y autocontenidos
-- ✅ Separación clara: perfil = editor, proyecto = infraestructura
-- ✅ Más fácil crear nuevos perfiles (solo 2 archivos)
-- ✅ Sin código duplicado (no hay scripts que duplicar)
-- ✅ Menor superficie de mantenimiento
+**Benefits**:
+- ✅ Profiles are portable and self-contained
+- ✅ Clear separation: profile = editor, project = infrastructure
+- ✅ Easier to create new profiles (only 2 files)
+- ✅ No duplicated code (no scripts to duplicate)
+- ✅ Smaller maintenance surface
 
-**Documentación**:
-- Creado `profiles/README.md` con guía completa de perfiles
-- Explica filosofía de separación de responsabilidades
-- Incluye ejemplos de cómo crear perfiles
-- Tips de uso y troubleshooting
+**Documentation**:
+- Created `profiles/README.md` with complete profile guide
+- Explains separation of responsibilities philosophy
+- Includes examples of how to create profiles
+- Usage tips and troubleshooting
 
-**Decisión arquitectural**:
-Si un proyecto necesita servicios (MySQL, Redis, etc.), debe usar su propio `docker-compose.yml` en el workspace del proyecto, no mezclarlo con la configuración del perfil de VSCode.
+**Architectural decision**:
+If a project needs services (MySQL, Redis, etc.), it should use its own `docker-compose.yml` in the project workspace, not mix it with VSCode profile configuration.
 
-### Fase 4: Mejora del Script Principal
+### Phase 4: Main Script Improvements
 
-**Prioridad**: MEDIA
-**Impacto**: Medio - Mejora legibilidad y mantenibilidad
-**Riesgo**: Bajo
+**Priority**: MEDIUM
+**Impact**: Medium - Improves readability and maintainability
+**Risk**: Low
 
-#### 2.4.1 Separar Responsabilidades
+#### 2.4.1 Separate Responsibilities
 
-**Archivo nuevo**: `lib/vsc-wslg-core.sh`
+**New file**: `lib/vsc-wslg-core.sh`
 
-Funciones:
+Functions:
 ```bash
-parse_arguments()         # Parseo de CLI args
-validate_mode()          # Validación de modo
-validate_action()        # Validación de acción
-validate_profile()       # Validación de perfil
-get_compose_file()       # Obtener archivo compose
-set_environment_vars()   # Configurar variables
-execute_action()         # Ejecutar acción docker-compose
+parse_arguments()         # CLI args parsing
+validate_mode()          # Mode validation
+validate_action()        # Action validation
+validate_profile()       # Profile validation
+get_compose_file()       # Get compose file
+set_environment_vars()   # Configure variables
+execute_action()         # Execute docker-compose action
 ```
 
-**vsc-wslg refactorizado**:
+**Refactored vsc-wslg**:
 ```bash
 #!/usr/bin/env bash
 set -e
@@ -330,29 +340,29 @@ set_environment_vars
 execute_action
 ```
 
-**Reducción**: De 137 líneas monolíticas → ~80 líneas lib + ~20 líneas main
+**Reduction**: From 137 monolithic lines → ~80 lib lines + ~20 main lines
 
-#### 2.4.2 Mejorar Validaciones
+#### 2.4.2 Improve Validations
 
 ```bash
-# Validar que Docker está instalado
-# Validar que el perfil existe (si se especifica)
-# Validar que el modo es compatible con el sistema
-# Mostrar warnings útiles
+# Validate Docker is installed
+# Validate profile exists (if specified)
+# Validate mode is compatible with system
+# Show useful warnings
 ```
 
-### Fase 5: Configuración Centralizada
+### Phase 5: Centralized Configuration
 
-**Prioridad**: BAJA
-**Impacto**: Medio - Facilita personalización
-**Riesgo**: Bajo
+**Priority**: LOW
+**Impact**: Medium - Facilitates customization
+**Risk**: Low
 
-#### 2.5.1 Crear Archivo de Configuración
+#### 2.5.1 Create Configuration File
 
-**Archivo nuevo**: `config/defaults.conf`
+**New file**: `config/defaults.conf`
 
 ```bash
-# Configuración global del proyecto
+# Global project configuration
 DEFAULT_WINDOW_WIDTH=1024
 DEFAULT_WINDOW_HEIGHT=768
 VSCODE_CONFIG_DIR="/home/dev/.config/Code/User"
@@ -361,161 +371,161 @@ WSLG_WORKAROUND_ENABLED=true
 PROFILE_MOUNT_PATH_PATTERN="/home/dev/vsc-wslg-{profile}-profile"
 ```
 
-**Archivo opcional**: `.vsc-wslg.conf` (en el proyecto del usuario)
+**Optional file**: `.vsc-wslg.conf` (in user's project)
 
 ```bash
-# Permite al usuario sobreescribir defaults
+# Allows user to override defaults
 WINDOW_WIDTH=1920
 WINDOW_HEIGHT=1080
 ```
 
-#### 2.5.2 Actualizar Scripts para Usar Configuración
+#### 2.5.2 Update Scripts to Use Configuration
 
 ```bash
 source /usr/local/etc/vsc-wslg/defaults.conf
 [ -f ~/.vsc-wslg.conf ] && source ~/.vsc-wslg.conf
 
-# Usar variables en lugar de valores hardcodeados
+# Use variables instead of hardcoded values
 xdotool windowsize "$WID" $WINDOW_WIDTH $WINDOW_HEIGHT
 ```
 
-### Fase 6: Mejoras en Manejo de Errores
+### Phase 6: Error Handling Improvements
 
-**Prioridad**: MEDIA
-**Impacto**: Alto - Mejora robustez y debugging
-**Riesgo**: Bajo
+**Priority**: MEDIUM
+**Impact**: High - Improves robustness and debugging
+**Risk**: Low
 
-#### 2.6.1 Biblioteca de Logging
+#### 2.6.1 Logging Library
 
-**Archivo nuevo**: `lib/logger.sh`
+**New file**: `lib/logger.sh`
 
 ```bash
-log_info()     # Mensajes informativos con timestamp
-log_success()  # Mensajes de éxito
-log_warning()  # Advertencias
-log_error()    # Errores (no fatal)
-log_fatal()    # Errores fatales (exit 1)
-log_debug()    # Solo si DEBUG=1
+log_info()     # Informational messages with timestamp
+log_success()  # Success messages
+log_warning()  # Warnings
+log_error()    # Errors (not fatal)
+log_fatal()    # Fatal errors (exit 1)
+log_debug()    # Only if DEBUG=1
 ```
 
-**Uso**:
+**Usage**:
 ```bash
 source /usr/local/lib/logger.sh
 
-log_info "Iniciando Docker daemon..."
-docker daemon &>/dev/null || log_fatal "No se pudo iniciar Docker daemon"
-log_success "Docker daemon iniciado correctamente"
+log_info "Starting Docker daemon..."
+docker daemon &>/dev/null || log_fatal "Could not start Docker daemon"
+log_success "Docker daemon started successfully"
 ```
 
-#### 2.6.2 Validaciones Robustas
+#### 2.6.2 Robust Validations
 
 ```bash
-# Validar precondiciones antes de ejecutar
+# Validate preconditions before executing
 check_docker_installed() {
-  command -v docker &>/dev/null || log_fatal "Docker no está instalado"
+  command -v docker &>/dev/null || log_fatal "Docker is not installed"
 }
 
 check_compose_file_exists() {
-  [ -f "$1" ] || log_fatal "Archivo compose no encontrado: $1"
+  [ -f "$1" ] || log_fatal "Compose file not found: $1"
 }
 
 check_wslg_available() {
-  [ -d /tmp/.X11-unix ] || log_warning "WSLg podría no estar disponible"
+  [ -d /tmp/.X11-unix ] || log_warning "WSLg might not be available"
 }
 ```
 
-#### 2.6.3 Modo Dry-run
+#### 2.6.3 Dry-run Mode
 
 ```bash
-# Agregar flag --dry-run al script principal
-# Muestra qué haría sin ejecutar
+# Add --dry-run flag to main script
+# Shows what it would do without executing
 
 ./vsc-wslg dood up symfony --dry-run
-# Salida:
+# Output:
 # Would execute: docker-compose -f .../DooD/docker-compose.yml up
 # Environment variables:
-#   COMPOSE_PROJECT_NAME=vsc_miproyecto
-#   PROJECT_DIR=/home/user/miproyecto
+#   COMPOSE_PROJECT_NAME=vsc_myproject
+#   PROJECT_DIR=/home/user/myproject
 #   VSCODE_EXTENSIONS_PROFILE=symfony
 ```
 
-### Fase 7: Estandarización de Perfiles
+### Phase 7: Profile Standardization
 
-**Prioridad**: BAJA
-**Impacto**: Medio - Mejora consistencia
-**Riesgo**: Bajo
+**Priority**: LOW
+**Impact**: Medium - Improves consistency
+**Risk**: Low
 
-#### 2.7.1 Definir Comandos Estándar
+#### 2.7.1 Define Standard Commands
 
-Todos los perfiles deben soportar:
-- `start` - Levantar servicios
-- `stop` - Detener servicios
-- `restart` - Reiniciar servicios
-- `status` - Ver estado
-- `logs` - Ver logs
-- `shell` - Abrir shell (si aplica)
+All profiles should support:
+- `start` - Start services
+- `stop` - Stop services
+- `restart` - Restart services
+- `status` - View status
+- `logs` - View logs
+- `shell` - Open shell (if applicable)
 
-#### 2.7.2 Template de Perfil
+#### 2.7.2 Profile Template
 
-**Archivo nuevo**: `profiles/TEMPLATE/`
+**New file**: `profiles/TEMPLATE/`
 
-Estructura completa con:
+Complete structure with:
 - `README.md` template
-- `docker-compose.yml` ejemplo
-- `manage` pre-configurado
-- `scripts/` con todos los comandos estándar
-- `vscode/` con estructura recomendada
+- `docker-compose.yml` example
+- Pre-configured `manage`
+- `scripts/` with all standard commands
+- `vscode/` with recommended structure
 
-#### 2.7.3 Documentación de Creación de Perfiles
+#### 2.7.3 Profile Creation Documentation
 
-Actualizar `README.md` con:
-- Guía paso a paso usando el template
-- Buenas prácticas
-- Ejemplos de casos de uso comunes
+Update `README.md` with:
+- Step-by-step guide using template
+- Best practices
+- Examples of common use cases
 
-### Fase 8: Testing y Calidad
+### Phase 8: Testing and Quality
 
-**Prioridad**: BAJA
-**Impacto**: Alto a largo plazo
-**Riesgo**: Bajo
+**Priority**: LOW
+**Impact**: High in long term
+**Risk**: Low
 
-#### 2.8.1 Scripts de Testing
+#### 2.8.1 Testing Scripts
 
-**Archivo nuevo**: `tests/test-profiles.sh`
+**New file**: `tests/test-profiles.sh`
 
 ```bash
-# Prueba que cada perfil:
-# - Se puede construir (build)
-# - Se puede iniciar (up)
-# - Los comandos manage funcionan
-# - Se detiene correctamente (down)
+# Test that each profile:
+# - Can be built (build)
+# - Can be started (up)
+# - manage commands work
+# - Stops correctly (down)
 ```
 
-#### 2.8.2 Linting de Shell Scripts
+#### 2.8.2 Shell Script Linting
 
 ```bash
-# Usar shellcheck en CI/CD
+# Use shellcheck in CI/CD
 find . -name "*.sh" -exec shellcheck {} \;
 ```
 
-#### 2.8.3 Documentación de API
+#### 2.8.3 API Documentation
 
-Documentar las funciones de las bibliotecas:
+Document library functions:
 ```bash
 # lib/profile-manager.sh
 
 ##
-# Inicia los servicios de un perfil
+# Starts profile services
 #
 # Globals:
-#   PROFILE_NAME - Nombre del perfil
-#   SCRIPT_DIR - Directorio del perfil
+#   PROFILE_NAME - Profile name
+#   SCRIPT_DIR - Profile directory
 # Arguments:
 #   None
 # Outputs:
-#   Mensajes de progreso a stdout
+#   Progress messages to stdout
 # Returns:
-#   0 si éxito, 1 si error
+#   0 if success, 1 if error
 ##
 profile_start() {
   ...
@@ -524,235 +534,235 @@ profile_start() {
 
 ---
 
-## 3. Nueva Estructura de Directorios Propuesta
+## 3. Proposed New Directory Structure
 
 ```
 .
-├── vsc-wslg                      # Script principal (simplificado)
+├── vsc-wslg                      # Main script (simplified)
 ├── config/
-│   └── defaults.conf             # Configuración por defecto
-├── lib/                          # Bibliotecas compartidas
-│   ├── vsc-wslg-core.sh         # Lógica core del script principal
-│   ├── vscode-setup.sh          # Setup de VSCode
-│   ├── docker-setup.sh          # Setup de Docker (DinD/DooD)
-│   ├── profile-loader.sh        # Carga de perfiles (existente, mejorado)
-│   ├── profile-manager.sh       # Gestión de perfiles
-│   ├── profile-manage-base.sh   # Base para scripts manage
-│   └── logger.sh                # Logging estandarizado
+│   └── defaults.conf             # Default configuration
+├── lib/                          # Shared libraries
+│   ├── vsc-wslg-core.sh         # Core logic of main script
+│   ├── vscode-setup.sh          # VSCode setup
+│   ├── docker-setup.sh          # Docker setup (DinD/DooD)
+│   ├── profile-loader.sh        # Profile loading (existing, improved)
+│   ├── profile-manager.sh       # Profile management
+│   ├── profile-manage-base.sh   # Base for manage scripts
+│   └── logger.sh                # Standardized logging
 ├── docker/
-│   ├── Dockerfile.base          # Dockerfile base común
-│   └── scripts/                 # Scripts auxiliares de build
+│   ├── Dockerfile.base          # Common base Dockerfile
+│   └── scripts/                 # Auxiliary build scripts
 ├── DinD/
-│   ├── Dockerfile-vsc-wslg     # Extiende base, específico DinD
-│   ├── docker-compose.yml      # Sin cambios
-│   └── entrypoint.sh           # Simplificado
+│   ├── Dockerfile-vsc-wslg     # Extends base, DinD specific
+│   ├── docker-compose.yml      # No changes
+│   └── entrypoint.sh           # Simplified
 ├── DooD/
-│   ├── Dockerfile-vsc-wslg     # Extiende base, específico DooD
-│   ├── docker-compose.yml      # Sin cambios
-│   └── entrypoint.sh           # Simplificado
+│   ├── Dockerfile-vsc-wslg     # Extends base, DooD specific
+│   ├── docker-compose.yml      # No changes
+│   └── entrypoint.sh           # Simplified
 ├── profiles/
-│   ├── TEMPLATE/               # Template para nuevos perfiles
+│   ├── TEMPLATE/               # Template for new profiles
 │   │   ├── README.md
 │   │   ├── docker-compose.yml
 │   │   ├── manage
 │   │   ├── scripts/
 │   │   ├── services/
 │   │   └── vscode/
-│   ├── symfony/                # Simplificado
-│   ├── rust/                   # Simplificado
-│   └── devops/                 # Simplificado
+│   ├── symfony/                # Simplified
+│   ├── rust/                   # Simplified
+│   └── devops/                 # Simplified
 ├── tests/
-│   ├── test-profiles.sh        # Tests de perfiles
-│   └── test-core.sh            # Tests de funcionalidad core
+│   ├── test-profiles.sh        # Profile tests
+│   └── test-core.sh            # Core functionality tests
 ├── docs/
-│   ├── architecture.md         # Arquitectura del proyecto
-│   ├── creating-profiles.md    # Guía de creación de perfiles
-│   └── troubleshooting.md      # Resolución de problemas
-└── README.md                    # Actualizado
+│   ├── architecture.md         # Project architecture
+│   ├── creating-profiles.md    # Profile creation guide
+│   └── troubleshooting.md      # Problem solving
+└── README.md                    # Updated
 ```
 
-**Mejoras**:
-- Separación clara entre config, código, tests, docs
-- `lib/` contiene TODAS las bibliotecas
-- `docker/` agrupa todo lo relacionado con Docker builds
-- `tests/` para mantener calidad
-- `docs/` para documentación extendida
+**Improvements**:
+- Clear separation between config, code, tests, docs
+- `lib/` contains ALL libraries
+- `docker/` groups everything related to Docker builds
+- `tests/` to maintain quality
+- `docs/` for extended documentation
 
 ---
 
-## 4. Estrategia de Implementación
+## 4. Implementation Strategy
 
-### 4.1 Orden Recomendado
+### 4.1 Recommended Order
 
-1. **Fase 6 (parcial)**: Implementar `lib/logger.sh` primero
-   - Permite usar logging consistente en todas las fases siguientes
-   - Bajo riesgo, alto beneficio
+1. **Phase 6 (partial)**: Implement `lib/logger.sh` first
+   - Allows using consistent logging in all following phases
+   - Low risk, high benefit
 
-2. **Fase 3**: Biblioteca común para scripts de perfiles
-   - Alta reducción de duplicación
-   - Bajo riesgo
-   - No afecta funcionalidad principal (solo perfiles)
+2. **Phase 3**: Common library for profile scripts
+   - High duplication reduction
+   - Low risk
+   - Doesn't affect main functionality (only profiles)
 
-3. **Fase 1**: Consolidación de Dockerfiles
-   - Alto impacto
-   - Requiere testing pero es acotado
-   - Facilita fases posteriores
+3. **Phase 1**: Dockerfile consolidation
+   - High impact
+   - Requires testing but is well-defined
+   - Facilitates later phases
 
-4. **Fase 2**: Unificación de entrypoints
-   - Requiere las bibliotecas de Fase 3
-   - Riesgo medio, requiere testing exhaustivo
+4. **Phase 2**: Entrypoint unification
+   - Requires Phase 3 libraries
+   - Medium risk, requires exhaustive testing
 
-5. **Fase 4**: Mejora del script principal
-   - Beneficia de bibliotecas anteriores
-   - Mejora UX
+5. **Phase 4**: Main script improvements
+   - Benefits from previous libraries
+   - Improves UX
 
-6. **Fase 7**: Estandarización de perfiles
-   - Beneficia de toda la infraestructura previa
+6. **Phase 7**: Profile standardization
+   - Benefits from all previous infrastructure
 
-7. **Fase 5**: Configuración centralizada
-   - Nice to have, se puede hacer en paralelo
+7. **Phase 5**: Centralized configuration
+   - Nice to have, can be done in parallel
 
-8. **Fase 8**: Testing y calidad
-   - Continuo durante todas las fases
+8. **Phase 8**: Testing and quality
+   - Continuous during all phases
 
-### 4.2 Enfoque Incremental
+### 4.2 Incremental Approach
 
-**Rama de desarrollo**: `refactor/code-organization`
+**Development branch**: `refactor/code-organization`
 
-**Por cada fase**:
-1. Crear nueva funcionalidad (sin romper la existente)
-2. Migrar un componente como prueba
-3. Testing exhaustivo
-4. Migrar resto de componentes
-5. Deprecar código antiguo (comentar, no eliminar aún)
-6. Commit y documentar
+**For each phase**:
+1. Create new functionality (without breaking existing)
+2. Migrate one component as test
+3. Exhaustive testing
+4. Migrate rest of components
+5. Deprecate old code (comment, don't delete yet)
+6. Commit and document
 
-**Rollback seguro**: Mantener código antiguo comentado hasta que todo funcione
+**Safe rollback**: Keep old code commented until everything works
 
 ### 4.3 Testing
 
-**Por cada cambio**:
-- [ ] Build exitoso de imágenes DinD y DooD
-- [ ] `up` funciona con perfil symfony
-- [ ] `up` funciona con perfil rust
-- [ ] `up` funciona con perfil devops
-- [ ] `up` funciona sin perfil
-- [ ] Extensiones se instalan correctamente
-- [ ] Settings se aplican correctamente
-- [ ] Comandos `manage` funcionan en cada perfil
-- [ ] Workaround WSLg funciona
-- [ ] Modo DinD: Docker daemon arranca
-- [ ] Modo DooD: Docker socket accesible
+**For each change**:
+- [ ] Successful build of DinD and DooD images
+- [ ] `up` works with symfony profile
+- [ ] `up` works with rust profile
+- [ ] `up` works with devops profile
+- [ ] `up` works without profile
+- [ ] Extensions install correctly
+- [ ] Settings apply correctly
+- [ ] `manage` commands work in each profile
+- [ ] WSLg workaround works
+- [ ] DinD mode: Docker daemon starts
+- [ ] DooD mode: Docker socket accessible
 
 ---
 
-## 5. Métricas de Éxito
+## 5. Success Metrics
 
-### 5.1 Reducción de Duplicación
+### 5.1 Duplication Reduction
 
-| Componente | Antes | Después | Reducción |
+| Component | Before | After | Reduction |
 |------------|-------|---------|-----------|
-| Dockerfiles | 138 líneas (69x2) | 70 líneas (50+10x2) | ~49% |
-| Entrypoints | 274 líneas (137x2) | 200 líneas (120+40x2) | ~27% |
-| Scripts perfiles | ~162 líneas | ~50 líneas | ~69% |
-| Scripts manage | ~144 líneas (48x3) | ~36 líneas (12x3) | ~75% |
-| **TOTAL** | **~718 líneas** | **~356 líneas** | **~50%** |
+| Dockerfiles | 138 lines (69x2) | 70 lines (50+10x2) | ~49% |
+| Entrypoints | 274 lines (137x2) | 200 lines (120+40x2) | ~27% |
+| Profile scripts | ~162 lines | ~50 lines | ~69% |
+| manage scripts | ~144 lines (48x3) | ~36 lines (12x3) | ~75% |
+| **TOTAL** | **~718 lines** | **~356 lines** | **~50%** |
 
-### 5.2 Mantenibilidad
+### 5.2 Maintainability
 
-**Antes**:
-- Actualizar VSCode: modificar 2 Dockerfiles
-- Añadir logging: modificar 10+ archivos
-- Nuevo comando perfil: modificar 3+ archivos
-- Fix en extensiones: modificar 2 entrypoints
+**Before**:
+- Update VSCode: modify 2 Dockerfiles
+- Add logging: modify 10+ files
+- New profile command: modify 3+ files
+- Extension fix: modify 2 entrypoints
 
-**Después**:
-- Actualizar VSCode: modificar 1 Dockerfile base
-- Añadir logging: usar `lib/logger.sh` existente
-- Nuevo comando perfil: modificar 1 archivo lib
-- Fix en extensiones: modificar 1 función en 1 archivo
+**After**:
+- Update VSCode: modify 1 base Dockerfile
+- Add logging: use existing `lib/logger.sh`
+- New profile command: modify 1 lib file
+- Extension fix: modify 1 function in 1 file
 
-### 5.3 Extensibilidad
+### 5.3 Extensibility
 
-**Tiempo para crear nuevo perfil**:
-- Antes: ~30-45 min (copiar/pegar, adaptar scripts)
-- Después: ~10-15 min (usar template, configurar)
+**Time to create new profile**:
+- Before: ~30-45 min (copy/paste, adapt scripts)
+- After: ~10-15 min (use template, configure)
 
-### 5.4 Calidad de Código
+### 5.4 Code Quality
 
-- [ ] 0 duplicación de lógica de negocio
-- [ ] 100% de scripts con `set -e`
-- [ ] 100% de funciones principales documentadas
-- [ ] Logging consistente en todos los scripts
-- [ ] Todas las precondiciones validadas
-
----
-
-## 6. Riesgos y Mitigaciones
-
-### Riesgo 1: Romper funcionalidad existente
-**Mitigación**:
-- Testing exhaustivo después de cada fase
-- Mantener código antiguo hasta validar nuevo
-- Commits atómicos con posibilidad de rollback
-
-### Riesgo 2: Complejidad añadida
-**Mitigación**:
-- Documentar cada función y biblioteca
-- Ejemplos claros de uso
-- No sobre-ingenierizar (YAGNI principle)
-
-### Riesgo 3: Tiempo de implementación
-**Mitigación**:
-- Priorizar fases por ROI
-- Implementación incremental
-- Se puede pausar entre fases
-
-### Riesgo 4: Compatibilidad con proyectos existentes
-**Mitigación**:
-- No cambiar nombres de comandos públicos
-- Variables de entorno mantienen compatibilidad
-- Documentar cualquier breaking change
+- [ ] 0 business logic duplication
+- [ ] 100% of scripts with `set -e`
+- [ ] 100% of main functions documented
+- [ ] Consistent logging in all scripts
+- [ ] All preconditions validated
 
 ---
 
-## 7. Estimación de Esfuerzo
+## 6. Risks and Mitigations
 
-| Fase | Tiempo Estimado | Prioridad |
+### Risk 1: Breaking existing functionality
+**Mitigation**:
+- Exhaustive testing after each phase
+- Keep old code until validating new
+- Atomic commits with rollback possibility
+
+### Risk 2: Added complexity
+**Mitigation**:
+- Document each function and library
+- Clear usage examples
+- Don't over-engineer (YAGNI principle)
+
+### Risk 3: Implementation time
+**Mitigation**:
+- Prioritize phases by ROI
+- Incremental implementation
+- Can pause between phases
+
+### Risk 4: Compatibility with existing projects
+**Mitigation**:
+- Don't change public command names
+- Environment variables maintain compatibility
+- Document any breaking changes
+
+---
+
+## 7. Effort Estimation
+
+| Phase | Estimated Time | Priority |
 |------|----------------|-----------|
-| Fase 1: Dockerfiles | 2-3 horas | ALTA |
-| Fase 2: Entrypoints | 4-5 horas | ALTA |
-| Fase 3: Scripts perfiles | 3-4 horas | MEDIA |
-| Fase 4: Script principal | 2-3 horas | MEDIA |
-| Fase 5: Configuración | 1-2 horas | BAJA |
-| Fase 6: Errores/logging | 2-3 horas | MEDIA |
-| Fase 7: Estandarización | 2-3 horas | BAJA |
-| Fase 8: Testing/docs | 3-4 horas | BAJA |
-| **TOTAL** | **19-27 horas** | |
+| Phase 1: Dockerfiles | 2-3 hours | HIGH |
+| Phase 2: Entrypoints | 4-5 hours | HIGH |
+| Phase 3: Profile scripts | 3-4 hours | MEDIUM |
+| Phase 4: Main script | 2-3 hours | MEDIUM |
+| Phase 5: Configuration | 1-2 hours | LOW |
+| Phase 6: Errors/logging | 2-3 hours | MEDIUM |
+| Phase 7: Standardization | 2-3 hours | LOW |
+| Phase 8: Testing/docs | 3-4 hours | LOW |
+| **TOTAL** | **19-27 hours** | |
 
-**Enfoque recomendado**:
-- Sprint 1 (1 semana): Fases 6 (parcial), 3, 1
-- Sprint 2 (1 semana): Fases 2, 4
-- Sprint 3 (1 semana): Fases 7, 5, 8
-
----
-
-## 8. Beneficios a Largo Plazo
-
-1. **Mantenibilidad**: Cambios centralizados, fáciles de aplicar
-2. **Extensibilidad**: Nuevos perfiles en minutos, no horas
-3. **Calidad**: Código testeable, menos bugs
-4. **Onboarding**: Más fácil para nuevos contribuidores entender el proyecto
-5. **Documentación**: Código auto-documentado con funciones bien nombradas
-6. **Performance**: Posibilidad de optimizar funciones compartidas
-7. **Evolución**: Base sólida para futuras features (ej: otros modos además de DinD/DooD)
+**Recommended approach**:
+- Sprint 1 (1 week): Phases 6 (partial), 3, 1
+- Sprint 2 (1 week): Phases 2, 4
+- Sprint 3 (1 week): Phases 7, 5, 8
 
 ---
 
-## 9. Conclusión
+## 8. Long-term Benefits
 
-Este plan de refactorización aborda de manera sistemática los problemas de organización y duplicación de código identificados en el proyecto. La implementación incremental minimiza riesgos mientras maximiza beneficios.
+1. **Maintainability**: Centralized changes, easy to apply
+2. **Extensibility**: New profiles in minutes, not hours
+3. **Quality**: Testable code, fewer bugs
+4. **Onboarding**: Easier for new contributors to understand the project
+5. **Documentation**: Self-documenting code with well-named functions
+6. **Performance**: Possibility to optimize shared functions
+7. **Evolution**: Solid foundation for future features (e.g., other modes besides DinD/DooD)
 
-**Recomendación**: Comenzar con las fases de alta prioridad (1, 2, 3, 6) que dan el mayor ROI en términos de reducción de duplicación y mejora de mantenibilidad.
+---
 
-El resultado será un codebase más limpio, mantenible y extensible, facilitando tanto el desarrollo futuro como la incorporación de nuevos contribuidores.
+## 9. Conclusion
+
+This refactoring plan systematically addresses the organization and code duplication problems identified in the project. Incremental implementation minimizes risks while maximizing benefits.
+
+**Recommendation**: Start with high-priority phases (1, 2, 3, 6) that give the highest ROI in terms of duplication reduction and maintainability improvement.
+
+The result will be a cleaner, more maintainable, and extensible codebase, facilitating both future development and the incorporation of new contributors.

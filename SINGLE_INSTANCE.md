@@ -1,124 +1,124 @@
-# Limitación de Instancia Única
+# Single Instance Limitation
 
-## ¿Por Qué Solo Una Instancia?
+## Why Only One Instance?
 
-Este proyecto utiliza **entornos Docker aislados** para cada proyecto, donde cada contenedor tiene:
-- Sus propias extensiones de VSCode
-- Su propia configuración
-- Sus propias herramientas y dependencias
+This project uses **isolated Docker environments** for each project, where each container has:
+- Its own VSCode extensions
+- Its own configuration
+- Its own tools and dependencies
 
-Sin embargo, todos los contenedores comparten el mismo **display de WSLg** (`:0`). VSCode detecta otras instancias corriendo en el mismo display e intenta comunicarse con ellas, lo que causa conflictos.
+However, all containers share the same **WSLg display** (`:0`). VSCode detects other instances running on the same display and attempts to communicate with them, causing conflicts.
 
-**Soluciones descartadas:**
-- ✗ Compartir configuración entre contenedores → Pierde el aislamiento (extensiones mezcladas)
-- ✗ Displays virtuales separados → Muy complejo, pierde integración con WSLg
+**Discarded solutions:**
+- ✗ Share configuration between containers → Loses isolation (mixed extensions)
+- ✗ Separate virtual displays → Too complex, loses WSLg integration
 
-**Solución adoptada:**
-- ✅ Mono-instancia con manejo elegante de conflictos
+**Adopted solution:**
+- ✅ Single-instance with elegant conflict handling
 
-## Comportamiento
+## Behavior
 
-### Escenario 1: Primera Instancia
+### Scenario 1: First Instance
 
 ```bash
-$ cd ~/proyecto-rust
+$ cd ~/rust-project
 $ ./vsc-wslg dood up
 
-🚀 Iniciando VSCode...
-# VSCode se abre normalmente
+🚀 Starting VSCode...
+# VSCode opens normally
 ```
 
-### Escenario 2: Intentar Segunda Instancia
+### Scenario 2: Attempting Second Instance
 
 ```bash
-$ cd ~/proyecto-symfony
+$ cd ~/symfony-project
 $ ./vsc-wslg dood up
 
-⚠️  Ya hay una instancia de vsc-wslg corriendo:
+⚠️  There's already a vsc-wslg instance running:
 
-   Proyecto:   vsc_proyecto-rust (DooD)
-   Contenedor: vsc_proyecto-rust_vscode_1
-   Workspace:  /home/user/proyecto-rust
+   Project:    vsc_rust-project (DooD)
+   Container:  vsc_rust-project_vscode_1
+   Workspace:  /home/user/rust-project
 
-¿Qué quieres hacer?
-  1) Cancelar (mantener la instancia existente)
-  2) Cerrar la instancia existente y abrir esta
+What do you want to do?
+  1) Cancel (keep existing instance)
+  2) Close existing instance and open this one
 
-Opción [1-2]:
+Option [1-2]:
 ```
 
-**Opción 1**: Cancela la operación, deja el VSCode actual corriendo.
+**Option 1**: Cancels the operation, leaves current VSCode running.
 
-**Opción 2**: Cierra automáticamente la instancia existente y abre la nueva:
+**Option 2**: Automatically closes the existing instance and opens the new one:
 ```bash
-🛑 Cerrando instancia(s) existente(s)...
-   Bajando vsc_proyecto-rust...
-✓ Listo, procediendo a abrir nueva instancia...
+🛑 Closing existing instance(s)...
+   Stopping vsc_rust-project...
+✓ Done, proceeding to open new instance...
 
-🚀 Iniciando VSCode...
-# VSCode de proyecto-symfony se abre
+🚀 Starting VSCode...
+# VSCode for symfony-project opens
 ```
 
-## Workflow Recomendado
+## Recommended Workflow
 
-### Cambio Rápido de Proyecto
+### Quick Project Switching
 
 ```bash
-# Estás trabajando en proyecto A
-cd ~/proyecto-a
+# You're working on project A
+cd ~/project-a
 ./vsc-wslg dood up
 
-# Quieres cambiar a proyecto B
-# Opción A: Manual
+# You want to switch to project B
+# Option A: Manual
 ./vsc-wslg dood down
-cd ~/proyecto-b
+cd ~/project-b
 ./vsc-wslg dood up
 
-# Opción B: Automático (usa opción 2 del prompt)
-cd ~/proyecto-b
+# Option B: Automatic (use option 2 from prompt)
+cd ~/project-b
 ./vsc-wslg dood up
-# → Selecciona opción 2
+# → Select option 2
 ```
 
-### Alias Útiles
+### Useful Aliases
 
-Agrega a tu `~/.bashrc` o `~/.zshrc`:
+Add to your `~/.bashrc` or `~/.zshrc`:
 
 ```bash
-# Cambio rápido con confirmación
-alias vsc-switch='cd "$1" && /ruta/a/vsc-wslg dood up'
+# Quick switch with confirmation
+alias vsc-switch='cd "$1" && /path/to/vsc-wslg dood up'
 
-# Cerrar instancia actual desde cualquier lugar
+# Close current instance from anywhere
 alias vsc-down='docker ps --filter "name=vsc_" --format "{{.Names}}" | head -1 | xargs -I {} docker stop {}'
 ```
 
-## Casos Especiales
+## Special Cases
 
-### Múltiples Proyectos Simultáneos (No Soportado)
+### Multiple Simultaneous Projects (Not Supported)
 
-Si necesitas trabajar en múltiples proyectos **al mismo tiempo**, considera:
+If you need to work on multiple projects **at the same time**, consider:
 
-1. **VSCode Remoto**: Usa VSCode de Windows + Remote-Containers
-2. **Displays Virtuales**: Implementación compleja con Xvfb/VNC (ver documentación extendida)
-3. **Editor Secundario**: Usa `vim`/`nano` en un contenedor para ediciones rápidas mientras VSCode está en otro
+1. **VSCode Remote**: Use Windows VSCode + Remote-Containers
+2. **Virtual Displays**: Complex implementation with Xvfb/VNC (see extended documentation)
+3. **Secondary Editor**: Use `vim`/`nano` in a container for quick edits while VSCode is in another
 
-### Detectar Instancia Corriendo
+### Detecting Running Instance
 
 ```bash
-# Ver qué instancia está activa
-docker ps --filter "name=vsc_" --format "Proyecto: {{.Names}}\nImagen: {{.Image}}"
+# See which instance is active
+docker ps --filter "name=vsc_" --format "Project: {{.Names}}\nImage: {{.Image}}"
 
-# Bajar todas las instancias
+# Stop all instances
 docker ps --filter "name=vsc_" -q | xargs docker stop
 ```
 
-## Arquitectura Técnica
+## Technical Architecture
 
 ```
 ┌─────────────────────────────────────┐
 │  WSLg Display Server (:0)           │
-│  - Gestiona todas las ventanas GUI  │
-│  - Permite detección entre apps     │
+│  - Manages all GUI windows          │
+│  - Allows detection between apps    │
 └──────────────┬──────────────────────┘
                │
        ┌───────┴────────┐
@@ -127,19 +127,19 @@ docker ps --filter "name=vsc_" -q | xargs docker stop
    (Rust env)       (PHP env)
        │                │
        └────────────────┘
-       Solo UNO puede
-       usar el display
-       a la vez
+       Only ONE can
+       use the display
+       at a time
 ```
 
 ## Trade-offs
 
-| Aspecto | Evaluación |
+| Aspect | Evaluation |
 |---------|------------|
-| **Aislamiento de entornos** | ✅ Completo |
-| **Reproducibilidad** | ✅ Total |
-| **Facilidad de uso** | ✅ Simple |
-| **Instancias concurrentes** | ❌ No soportado |
-| **Cambio entre proyectos** | ⚠️ Requiere cerrar/abrir (~5-10 seg) |
+| **Environment isolation** | ✅ Complete |
+| **Reproducibility** | ✅ Total |
+| **Ease of use** | ✅ Simple |
+| **Concurrent instances** | ❌ Not supported |
+| **Project switching** | ⚠️ Requires close/open (~5-10 sec) |
 
-Esta limitación es un **compromiso consciente** entre simplicidad, aislamiento y la realidad técnica de WSLg.
+This limitation is a **conscious compromise** between simplicity, isolation, and the technical reality of WSLg.

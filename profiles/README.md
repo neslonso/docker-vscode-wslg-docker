@@ -1,59 +1,59 @@
-# Perfiles de VSCode
+# VSCode Profiles
 
-## Concepto
+## Concept
 
-Un **perfil** es simplemente una configuración de VSCode: extensiones y settings específicos para un tipo de desarrollo.
+A **profile** is simply a VSCode configuration: extensions and specific settings for a type of development.
 
-**Los perfiles NO incluyen:**
-- ❌ Scripts de orquestación
-- ❌ Docker compose de servicios
-- ❌ Comandos de gestión
-- ❌ Configuración de infraestructura
+**Profiles do NOT include:**
+- ❌ Orchestration scripts
+- ❌ Docker compose for services
+- ❌ Management commands
+- ❌ Infrastructure configuration
 
-**Los perfiles SÍ incluyen:**
-- ✅ Lista de extensiones de VSCode
-- ✅ Settings.json específicos
-- ✅ Documentación de uso
+**Profiles DO include:**
+- ✅ VSCode extensions list
+- ✅ Specific settings.json
+- ✅ Usage documentation
 
-## Estructura de un Perfil
+## Profile Structure
 
 ```
-profiles/nombre-perfil/
-├── README.md              # Documentación del perfil
+profiles/profile-name/
+├── README.md              # Profile documentation
 └── vscode/
-    ├── extensions.list    # Lista de extensiones a instalar
-    └── settings.json      # Configuración de VSCode
+    ├── extensions.list    # List of extensions to install
+    └── settings.json      # VSCode configuration
 ```
 
-## Crear un Nuevo Perfil
+## Creating a New Profile
 
-### 1. Crear la estructura
+### 1. Create the structure
 
 ```bash
 cd profiles
-mkdir mi-perfil
-mkdir mi-perfil/vscode
+mkdir my-profile
+mkdir my-profile/vscode
 ```
 
-### 2. Crear `vscode/extensions.list`
+### 2. Create `vscode/extensions.list`
 
-Lista de extensiones, una por línea:
+List of extensions, one per line:
 
 ```
-# mi-perfil/vscode/extensions.list
+# my-profile/vscode/extensions.list
 ms-python.python
 ms-python.vscode-pylance
 ms-python.black-formatter
 ```
 
-**Cómo encontrar IDs de extensiones:**
-1. Abre VSCode
-2. Ve a extensiones
-3. Click derecho en una extensión → "Copy Extension ID"
+**How to find extension IDs:**
+1. Open VSCode
+2. Go to extensions
+3. Right-click on an extension → "Copy Extension ID"
 
-### 3. Crear `vscode/settings.json`
+### 3. Create `vscode/settings.json`
 
-Configuración específica para este perfil:
+Specific configuration for this profile:
 
 ```json
 {
@@ -66,148 +66,148 @@ Configuración específica para este perfil:
 }
 ```
 
-**Nota:** Estos settings se **mergean** con los settings del usuario. Los del perfil tienen prioridad.
+**Note:** These settings are **merged** with user settings. Profile settings take priority.
 
-### 4. Crear `README.md`
+### 4. Create `README.md`
 
-Documenta:
-- Para qué es el perfil
-- Qué extensiones incluye y por qué
-- Tips de uso
-- Enlaces a recursos útiles
+Document:
+- What the profile is for
+- Which extensions it includes and why
+- Usage tips
+- Links to useful resources
 
-## Usar un Perfil
+## Using a Profile
 
 ```bash
-cd ~/mi-proyecto
-./vsc-wslg dood up mi-perfil
+cd ~/my-project
+./vsc-wslg dood up my-profile
 ```
 
-El perfil:
-1. Se monta en `/home/dev/vsc-wslg-mi-perfil-profile/` (read-only)
-2. VSCode lee `vscode/extensions.list` e instala las extensiones
-3. VSCode mergea `vscode/settings.json` con tu configuración
-4. El README se abre automáticamente en la primera ejecución
+The profile:
+1. Mounts at `/home/dev/vsc-wslg-my-profile-profile/` (read-only)
+2. VSCode reads `vscode/extensions.list` and installs extensions
+3. VSCode merges `vscode/settings.json` with your configuration
+4. The README opens automatically on first execution
 
-## Filosofía: Separación de Responsabilidades
+## Philosophy: Separation of Responsibilities
 
-### Perfil = Configuración de Editor
+### Profile = Editor Configuration
 
-El perfil configura tu **entorno de desarrollo en VSCode**:
+The profile configures your **development environment in VSCode**:
 - Syntax highlighting
 - Linters
 - Formatters
 - Snippets
-- Temas
+- Themes
 
-### Proyecto = Infraestructura
+### Project = Infrastructure
 
-Si necesitas servicios (bases de datos, caches, etc.), ponlos en el **docker-compose.yml de tu proyecto**:
+If you need services (databases, caches, etc.), put them in your **project's docker-compose.yml**:
 
 ```
-~/mi-proyecto/
+~/my-project/
 ├── docker-compose.yml    # ← MySQL, Redis, etc.
 ├── src/
 └── ...
 
-# Usar:
-./vsc-wslg dood up symfony  # VSCode con perfil symfony
-cd ~/mi-proyecto
-docker compose up -d        # Servicios del proyecto
+# Usage:
+./vsc-wslg dood up symfony  # VSCode with symfony profile
+cd ~/my-project
+docker compose up -d        # Project services
 ```
 
-**Ventajas:**
-- ✅ Reutilizas el mismo perfil para múltiples proyectos
-- ✅ Cada proyecto define su propia infraestructura
-- ✅ No mezclas configuración de editor con orquestación de servicios
-- ✅ Simplicidad: un perfil es solo 2 archivos
+**Advantages:**
+- ✅ Reuse the same profile for multiple projects
+- ✅ Each project defines its own infrastructure
+- ✅ Don't mix editor configuration with service orchestration
+- ✅ Simplicity: a profile is just 2 files
 
-## Perfiles Incluidos
+## Included Profiles
 
 ### symfony
-**Para:** Desarrollo PHP/Symfony
-**Extensiones:** PHP Intelephense, Symfony Support, Twig, Composer, etc.
+**For:** PHP/Symfony development
+**Extensions:** PHP Intelephense, Symfony Support, Twig, Composer, etc.
 **Settings:** PHP formatting, debug configuration
 
 ### rust
-**Para:** Desarrollo Rust
-**Extensiones:** rust-analyzer, CodeLLDB, Dependi, TOML
+**For:** Rust development
+**Extensions:** rust-analyzer, CodeLLDB, Dependi, TOML
 **Settings:** Rust analyzer configuration, formatting
 
 ### devops
-**Para:** DevOps, IaC, Scripts
-**Extensiones:** Docker, Kubernetes, Terraform, Ansible, YAML, etc.
+**For:** DevOps, IaC, Scripts
+**Extensions:** Docker, Kubernetes, Terraform, Ansible, YAML, etc.
 **Settings:** YAML indentation, shellcheck
 
 ## Tips
 
-### Testing de un Perfil
+### Testing a Profile
 
-Antes de usarlo en producción, prueba tu perfil:
+Before using it in production, test your profile:
 
 ```bash
 mkdir ~/test-profile
 cd ~/test-profile
-./vsc-wslg dood up mi-perfil
+./vsc-wslg dood up my-profile
 ```
 
-Verifica que:
-- ✓ Extensiones se instalen correctamente
-- ✓ Settings se apliquen
-- ✓ No hay conflictos
+Verify that:
+- ✓ Extensions install correctly
+- ✓ Settings are applied
+- ✓ No conflicts
 
-### Compartir Perfiles
+### Sharing Profiles
 
-Los perfiles son portables. Comparte el directorio completo:
+Profiles are portable. Share the complete directory:
 
 ```bash
-tar czf mi-perfil.tar.gz profiles/mi-perfil/
-# Compartir mi-perfil.tar.gz
+tar czf my-profile.tar.gz profiles/my-profile/
+# Share my-profile.tar.gz
 ```
 
-Otro usuario:
+Another user:
 ```bash
 cd vscode-wslg-docker
-tar xzf mi-perfil.tar.gz -C profiles/
+tar xzf my-profile.tar.gz -C profiles/
 ```
 
-### Evolucionar un Perfil
+### Evolving a Profile
 
-Los perfiles evolucionan. Cuando descubras nuevas extensiones útiles:
+Profiles evolve. When you discover new useful extensions:
 
-1. Edita `vscode/extensions.list`
-2. Rebuild del contenedor: `./vsc-wslg dood build`
-3. Lanza de nuevo: `./vsc-wslg dood up mi-perfil`
+1. Edit `vscode/extensions.list`
+2. Rebuild the container: `./vsc-wslg dood build`
+3. Launch again: `./vsc-wslg dood up my-profile`
 
-Las nuevas extensiones se instalarán automáticamente.
+New extensions will be installed automatically.
 
 ## Troubleshooting
 
-### Las extensiones no se instalan
+### Extensions don't install
 
-**Causa:** Formato incorrecto en `extensions.list`
+**Cause:** Incorrect format in `extensions.list`
 
-**Solución:**
-- Una extensión por línea
-- No espacios antes/después
-- IDs exactos (case-sensitive)
-- Sin comentarios inline (usa líneas separadas para comentarios con #)
+**Solution:**
+- One extension per line
+- No spaces before/after
+- Exact IDs (case-sensitive)
+- No inline comments (use separate lines for comments with #)
 
-### Settings no se aplican
+### Settings don't apply
 
-**Causa:** JSON inválido
+**Cause:** Invalid JSON
 
-**Solución:**
+**Solution:**
 ```bash
-# Validar JSON
-jq . profiles/mi-perfil/vscode/settings.json
+# Validate JSON
+jq . profiles/my-profile/vscode/settings.json
 ```
 
-### El perfil no se monta
+### Profile doesn't mount
 
-**Causa:** Variable de entorno no seteada
+**Cause:** Environment variable not set
 
-**Solución:** Asegúrate de especificar el perfil:
+**Solution:** Make sure to specify the profile:
 ```bash
-./vsc-wslg dood up mi-perfil  # ← necesario
+./vsc-wslg dood up my-profile  # ← required
 ```
