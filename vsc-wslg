@@ -103,22 +103,22 @@ show_help() {
 	local white='\033[97m'
 
 	echo "" >&2
-	echo -e "${white}Usage:${reset} ${cyan}$0${reset} [${magenta}dood${reset}|${magenta}dind${reset}] <action> [profile]" >&2
+	echo -e "${white}Usage:${reset} ${cyan}$0${reset} <action> [profile] [mode]" >&2
 	echo "" >&2
 	echo -e "Containerized VSCode launcher displayed via ${white}WSLg${reset}." >&2
 	echo -e "Run from the directory you want to mount as ${yellow}/workspace${reset}." >&2
 	echo "" >&2
-	echo -e "${white}Mode:${reset}" >&2
-	echo -e "  ${magenta}dood${reset}  → Docker-out-of-Docker (uses host's Docker daemon via /var/run/docker.sock)" >&2
-	echo -e "  ${magenta}dind${reset}  → Docker-in-Docker (Docker daemon inside container)" >&2
-	echo "" >&2
 	echo -e "${white}Actions:${reset}" >&2
-	echo -e "  ${green}build${reset}      Rebuild the image" >&2
 	echo -e "  ${green}up${reset}         Launch VSCode (foreground, down on close)" >&2
 	echo -e "  ${green}upd${reset}        Launch VSCode (background)" >&2
 	echo -e "  ${green}upd-logs${reset}   Launch VSCode (background + logs)" >&2
-	echo -e "  ${green}down${reset}       Stop container" >&2
-	echo -e "  ${green}clean${reset}      Stop container and remove volumes" >&2
+	echo -e "  ${green}build${reset}      Rebuild the image" >&2
+	echo -e "  ${green}down${reset}       Stop container (auto-detects mode)" >&2
+	echo -e "  ${green}clean${reset}      Stop container and remove volumes (auto-detects mode)" >&2
+	echo "" >&2
+	echo -e "${white}Modes:${reset}" >&2
+	echo -e "  ${magenta}dind${reset}  → Docker-in-Docker (default)" >&2
+	echo -e "  ${magenta}dood${reset}  → Docker-out-of-Docker" >&2
 	echo "" >&2
 	echo -e "${white}Available profiles:${reset}" >&2
 	for dir in "$script_dir"/profiles/*/; do
@@ -129,8 +129,11 @@ show_help() {
 	done
 	echo "" >&2
 	echo -e "${white}Examples:${reset}" >&2
-	echo -e "  ${cyan}$0${reset} ${magenta}dood${reset} ${green}up${reset} symfony" >&2
-	echo -e "  ${cyan}$0${reset} ${magenta}dind${reset} ${green}down${reset} symfony" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset} devops              ${white}# Launch devops profile in dind (default)${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset} devops dood         ${white}# Launch devops in dood mode${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset}                     ${white}# Launch without profile in dind${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}build${reset} devops           ${white}# Rebuild devops image${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}down${reset}                   ${white}# Stop running container${reset}" >&2
 	echo "" >&2
 	exit 1
 }
@@ -138,12 +141,10 @@ show_help() {
 ########################################################################################################################
 # Script
 
-# Directory from where this script is executed
-
-mode="$1"
-action="$2"
-#profile="${3:-symfony}"
-profile="$3"
+# Parse arguments: <action> [profile] [mode]
+action="$1"
+profile="$2"
+mode="${3:-dind}"  # Default to dind
 
 # Directory where this script lives
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
@@ -156,23 +157,45 @@ raw_name="$(basename "$PWD")"
 safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
 proj_name="vsc_${safe_name}"
 
-# Select docker-compose files according to mode
-# Base compose file + mode-specific override
-base_compose="$script_dir/docker/docker-compose.yml"
+# Validate action
+if [ -z "$action" ]; then
+	echo "✗ Action missing." >&2
+	show_help
+	exit 1
+fi
 
+# For down/clean actions, auto-detect mode from running container
+if [ "$action" = "down" ] || [ "$action" = "clean" ]; then
+	# Try to detect mode from running container
+	running_container=$(docker ps --filter "name=${proj_name}" --format "{{.Names}}" 2>/dev/null | head -1)
+
+	if [ -n "$running_container" ]; then
+		image_name=$(docker inspect "$running_container" --format='{{.Config.Image}}' 2>/dev/null)
+		if echo "$image_name" | grep -q "dind"; then
+			mode="dind"
+		else
+			mode="dood"
+		fi
+	fi
+	# If no container running, use default mode or provided mode
+fi
+
+# Validate mode
 case "$mode" in
-	dood)
-		mode_compose="$script_dir/docker/docker-compose.dood.yml"
-		;;
-	dind)
-		mode_compose="$script_dir/docker/docker-compose.dind.yml"
+	dood|dind)
+		# Valid mode
 		;;
 	*)
 		echo "✗ Unknown mode: $mode" >&2
+		echo "   Valid modes: dind, dood" >&2
 		show_help
 		exit 1
 		;;
 esac
+
+# Select docker-compose files according to mode
+base_compose="$script_dir/docker/docker-compose.yml"
+mode_compose="$script_dir/docker/docker-compose.${mode}.yml"
 
 if [ ! -f "$base_compose" ]; then
 	echo "✗ Couldn't find base docker-compose: $base_compose" >&2
@@ -186,12 +209,6 @@ fi
 
 # Compose file arguments for docker compose command
 compose_args="-f $base_compose -f $mode_compose"
-
-if [ -z "$action" ]; then
-	echo "✗ Action missing." >&2
-	show_help
-	exit 1
-fi
 
 ########################################################################################################################
 # Common environment variables
