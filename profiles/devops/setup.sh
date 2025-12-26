@@ -18,10 +18,10 @@ sudo apt-get update -qq
 echo "  → Installing ShellCheck..."
 sudo apt-get install -y -qq shellcheck
 
-# hadolint - Dockerfile linter (via wget since it's a binary)
+# hadolint - Dockerfile linter (download binary)
 echo "  → Installing hadolint..."
 HADOLINT_VERSION="2.12.0"
-sudo wget -qO /usr/local/bin/hadolint \
+sudo curl -fsSL -o /usr/local/bin/hadolint \
     "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-x86_64"
 sudo chmod +x /usr/local/bin/hadolint
 
