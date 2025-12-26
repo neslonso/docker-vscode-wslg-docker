@@ -6,9 +6,16 @@ Este directorio contiene los archivos base de Docker para el proyecto VSCode-WSL
 
 ```
 docker/
-├── Dockerfile.base      # Dockerfile base común para DinD y DooD
-├── test-builds.sh       # Script de testing y validación
-└── README.md           # Este archivo
+├── Dockerfile.base           # Dockerfile base común para DinD y DooD
+├── entrypoint.sh             # Entrypoint unificado (soporta ambos modos)
+├── docker-compose.yml        # Configuración base de compose
+├── docker-compose.dind.yml   # Override para modo DinD
+├── docker-compose.dood.yml   # Override para modo DooD
+├── lib/                      # Librerías compartidas
+│   ├── docker-setup.sh       # Funciones de configuración Docker
+│   └── vscode-setup.sh       # Funciones de configuración VSCode
+├── test-builds.sh            # Script de testing y validación
+└── README.md                 # Este archivo
 ```
 
 ## Dockerfile.base
@@ -24,30 +31,30 @@ El Dockerfile acepta los siguientes argumentos de construcción:
   - `"false"`: Instala solo Docker CLI (para DooD)
 
 - **ENTRYPOINT_MODE** (default: `"dood"`)
-  - `"DinD"`: Usa `DinD/entrypoint.sh`
-  - `"DooD"`: Usa `DooD/entrypoint.sh`
+  - `"dind"`: Modo Docker-in-Docker
+  - `"dood"`: Modo Docker-out-of-Docker
+
+## Docker Compose
+
+El proyecto usa un patrón de **compose base + overrides** para eliminar duplicación:
+
+- **docker-compose.yml**: Configuración común (volúmenes, variables de entorno, etc.)
+- **docker-compose.dind.yml**: Específico para DinD (privileged, volumen dind-data)
+- **docker-compose.dood.yml**: Específico para DooD (socket de Docker del host)
 
 ### Uso desde docker-compose
 
-**DinD** (`DinD/docker-compose.yml`):
-```yaml
-build:
-  context: ..
-  dockerfile: docker/Dockerfile.base
-  args:
-    INSTALL_DOCKER_DAEMON: "true"
-    ENTRYPOINT_MODE: "DinD"
+**DinD**:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.dind.yml up
 ```
 
-**DooD** (`DooD/docker-compose.yml`):
-```yaml
-build:
-  context: ..
-  dockerfile: docker/Dockerfile.base
-  args:
-    INSTALL_DOCKER_DAEMON: "false"
-    ENTRYPOINT_MODE: "DooD"
+**DooD**:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.dood.yml up
 ```
+
+El script `vsc-wslg` maneja esto automáticamente.
 
 ### Uso desde línea de comandos
 
@@ -55,7 +62,7 @@ build:
 # Build DinD
 docker build \
   --build-arg INSTALL_DOCKER_DAEMON=true \
-  --build-arg ENTRYPOINT_MODE=DinD \
+  --build-arg ENTRYPOINT_MODE=dind \
   -f docker/Dockerfile.base \
   -t vscode-wslg-dind \
   .
@@ -63,7 +70,7 @@ docker build \
 # Build DooD
 docker build \
   --build-arg INSTALL_DOCKER_DAEMON=false \
-  --build-arg ENTRYPOINT_MODE=DooD \
+  --build-arg ENTRYPOINT_MODE=dood \
   -f docker/Dockerfile.base \
   -t vscode-wslg-dood \
   .
@@ -85,24 +92,30 @@ Este script:
 
 ## Beneficios de la Consolidación
 
-### Antes (Duplicación)
-- `DinD/Dockerfile-vsc-wslg`: 69 líneas
-- `DooD/Dockerfile-vsc-wslg`: 63 líneas
-- **Total**: 132 líneas
-- **Duplicación**: ~95%
+El proyecto ha eliminado duplicación en tres niveles:
 
-### Después (Consolidado)
-- `docker/Dockerfile.base`: 127 líneas (con documentación)
-- **Reducción efectiva**: ~50% de código duplicado eliminado
-- **Beneficio**: Un solo lugar para actualizar VSCode, dependencias, etc.
+### 1. Dockerfiles (Fase 1)
+**Antes**: 2 archivos duplicados (69 + 63 líneas = 132 líneas, ~95% duplicación)
+**Después**: 1 archivo base (127 líneas con documentación)
+**Reducción**: ~50% código duplicado eliminado
+
+### 2. Entrypoints (Fase 2)
+**Antes**: 2 archivos casi idénticos (58 + 58 líneas = 116 líneas, ~98% duplicación)
+**Después**: 1 entrypoint unificado (76 líneas)
+**Reducción**: 34% código eliminado
+
+### 3. Docker Compose (Fase 3)
+**Antes**: 2 archivos completos (docker/modes/dind/ + docker/modes/dood/)
+**Después**: 1 base + 2 overrides pequeños
+**Reducción**: ~70% código duplicado eliminado
 
 ### Ventajas
 
-1. **Mantenibilidad**: Actualizar VSCode o dependencias requiere modificar solo un archivo
-2. **Consistencia**: Garantiza que DinD y DooD usan exactamente las mismas versiones
+1. **Mantenibilidad**: Un solo lugar para actualizar configuración común
+2. **Consistencia**: DinD y DooD usan exactamente las mismas versiones y configuración
 3. **Cache de Docker**: Las capas comunes se comparten entre builds
-4. **Tiempo de build**: Builds incrementales más rápidos
-5. **Menos errores**: No hay riesgo de que los Dockerfiles diverjan
+4. **Claridad**: Las diferencias entre modos están claramente separadas en archivos pequeños
+5. **Menos errores**: No hay riesgo de que los archivos diverjan
 
 ## Actualizar VSCode
 
@@ -148,40 +161,31 @@ RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
 
 Si el build falla al copiar el entrypoint:
 ```
-COPY failed: file not found in build context or excluded by .dockerignore: stat DinD/entrypoint.sh: file does not exist
+COPY failed: file not found in build context or excluded by .dockerignore
 ```
 
 Verifica que:
-1. El `context` en docker-compose.yml es `..` (directorio padre)
-2. Los archivos `DinD/entrypoint.sh` y `DooD/entrypoint.sh` existen
-3. El `ENTRYPOINT_MODE` está correctamente especificado (case-sensitive)
+1. El `context` en docker-compose.yml apunta correctamente al directorio padre (`..`)
+2. El archivo `docker/entrypoint.sh` existe
+3. Los build args están correctamente especificados
 
 ### Build instala paquetes incorrectos
 
-Verifica que los build args están correctamente configurados en docker-compose.yml:
+Verifica que los build args están correctamente configurados en los archivos de override:
 ```yaml
+# En docker-compose.dind.yml o docker-compose.dood.yml
 args:
   INSTALL_DOCKER_DAEMON: "true"  # Debe ser string "true" o "false"
-  ENTRYPOINT_MODE: "DinD"        # Debe coincidir con el nombre del directorio
+  ENTRYPOINT_MODE: "dind"        # Debe ser "dind" o "dood" (lowercase)
 ```
 
-## Migración desde Dockerfiles Antiguos
+### Compose no encuentra los archivos
 
-Si necesitas rollback a los Dockerfiles originales:
+Si `docker compose` no encuentra los archivos de configuración, verifica que estás usando:
+```bash
+# Desde el directorio del proyecto
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dind.yml up
 
-1. Los backups están en:
-   - `DinD/Dockerfile-vsc-wslg.backup`
-   - `DooD/Dockerfile-vsc-wslg.backup`
-
-2. Restaurar en docker-compose.yml:
-   ```yaml
-   build:
-     context: ..
-     dockerfile: DinD/Dockerfile-vsc-wslg  # o DooD/Dockerfile-vsc-wslg
-   ```
-
-3. Copiar backups:
-   ```bash
-   cp DinD/Dockerfile-vsc-wslg.backup DinD/Dockerfile-vsc-wslg
-   cp DooD/Dockerfile-vsc-wslg.backup DooD/Dockerfile-vsc-wslg
-   ```
+# O usa el script vsc-wslg que lo hace automáticamente
+./vsc-wslg dind up
+```

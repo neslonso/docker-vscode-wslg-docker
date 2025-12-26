@@ -1,0 +1,29 @@
+# ============================================================================
+# Docker-in-Docker (DinD) Mode - Override Configuration
+# ============================================================================
+# This file extends docker-compose.yml with DinD-specific settings.
+#
+# DinD Mode Features:
+# - Runs Docker daemon inside the container
+# - Requires privileged mode
+# - Uses dedicated volume for Docker data storage
+# - Isolated from host Docker daemon
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.dind.yml up
+
+services:
+  vscode:
+    build:
+      args:
+        INSTALL_DOCKER_DAEMON: "true"
+        ENTRYPOINT_MODE: "dind"
+    image: vscode-wslg-dind
+    privileged: true
+    volumes:
+      # Docker daemon data storage
+      - dind-data:/var/lib/docker
+
+volumes:
+  # DinD-specific: Docker daemon persistent storage
+  dind-data:

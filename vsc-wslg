@@ -73,12 +73,13 @@ check_running_instances() {
 				fi
 				echo "   🔍 DEBUG: Mode: $existing_mode" >&2
 
-				local existing_compose="$script_dir/docker/modes/${existing_mode}/docker-compose.yml"
-				echo "   🔍 DEBUG: Compose file: $existing_compose" >&2
-				echo "   🔍 DEBUG: Running: COMPOSE_PROJECT_NAME=$project docker compose -f $existing_compose down" >&2
+				local base_compose="$script_dir/docker/docker-compose.yml"
+				local mode_compose="$script_dir/docker/docker-compose.${existing_mode}.yml"
+				echo "   🔍 DEBUG: Compose files: $base_compose + $mode_compose" >&2
+				echo "   🔍 DEBUG: Running: COMPOSE_PROJECT_NAME=$project docker compose -f $base_compose -f $mode_compose down" >&2
 
-				# Stop using the correct compose file
-				COMPOSE_PROJECT_NAME="$project" docker compose -f "$existing_compose" down 2>&1 | sed 's/^/      /'
+				# Stop using the correct compose files
+				COMPOSE_PROJECT_NAME="$project" docker compose -f "$base_compose" -f "$mode_compose" down 2>&1 | sed 's/^/      /'
 				local exit_code=$?
 				echo "   🔍 DEBUG: Exit code: $exit_code" >&2
 			done <<< "$running"
@@ -155,13 +156,16 @@ raw_name="$(basename "$PWD")"
 safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
 proj_name="vsc_${safe_name}"
 
-# Select docker-compose according to mode
+# Select docker-compose files according to mode
+# Base compose file + mode-specific override
+base_compose="$script_dir/docker/docker-compose.yml"
+
 case "$mode" in
 	dood)
-		compose_file="$script_dir/docker/modes/dood/docker-compose.yml"
+		mode_compose="$script_dir/docker/docker-compose.dood.yml"
 		;;
 	dind)
-		compose_file="$script_dir/docker/modes/dind/docker-compose.yml"
+		mode_compose="$script_dir/docker/docker-compose.dind.yml"
 		;;
 	*)
 		echo "✗ Unknown mode: $mode" >&2
@@ -170,10 +174,18 @@ case "$mode" in
 		;;
 esac
 
-if [ ! -f "$compose_file" ]; then
-	echo "✗ Couldn't find docker-compose for mode '$mode': $compose_file" >&2
+if [ ! -f "$base_compose" ]; then
+	echo "✗ Couldn't find base docker-compose: $base_compose" >&2
 	exit 1
 fi
+
+if [ ! -f "$mode_compose" ]; then
+	echo "✗ Couldn't find docker-compose for mode '$mode': $mode_compose" >&2
+	exit 1
+fi
+
+# Compose file arguments for docker compose command
+compose_args="-f $base_compose -f $mode_compose"
 
 if [ -z "$action" ]; then
 	echo "✗ Action missing." >&2
@@ -195,32 +207,32 @@ export PROFILE_DIR="$script_dir/profiles/$profile"
 case "$action" in
 	build)
 		# Rebuild doesn't care about COMPOSE_PROJECT_NAME as it doesn't create containers or networks
-		docker compose -f "$compose_file" build
+		docker compose $compose_args build
 		;;
 	up)
 		# Check if there are other instances running
 		check_running_instances
 		#COMPOSE_PROJECT_NAME="$proj_name" \
 		#PROJECT_DIR="$project_dir" \
-		docker compose -f "$compose_file" up
-		docker compose -f "$compose_file" down
+		docker compose $compose_args up
+		docker compose $compose_args down
 		;;
 	upd)
 		# Check if there are other instances running
 		check_running_instances
-		docker compose -f "$compose_file" up -d
+		docker compose $compose_args up -d
 		;;
 	upd-logs)
 		# Check if there are other instances running
 		check_running_instances
-		docker compose -f "$compose_file" up -d
-		docker compose -f "$compose_file" logs -f
+		docker compose $compose_args up -d
+		docker compose $compose_args logs -f
 		;;
 	down)
-		docker compose -f "$compose_file" down
+		docker compose $compose_args down
 		;;
 	clean)
-		docker compose -f "$compose_file" down -v
+		docker compose $compose_args down -v
 		echo "✓ Volumes removed: ${proj_name}_vscode-extensions, ${proj_name}_vscode-config"
 		;;
 	*)
