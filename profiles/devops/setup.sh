@@ -19,11 +19,16 @@ echo "  → Installing ShellCheck..."
 sudo apt-get install -y -qq shellcheck
 
 # hadolint - Dockerfile linter (download binary)
+# Made optional in case of network issues
 echo "  → Installing hadolint..."
 HADOLINT_VERSION="2.12.0"
-sudo curl -fsSL -o /usr/local/bin/hadolint \
-    "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-x86_64"
-sudo chmod +x /usr/local/bin/hadolint
+if sudo curl -fsSL -o /usr/local/bin/hadolint \
+    "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-x86_64" 2>/dev/null; then
+    sudo chmod +x /usr/local/bin/hadolint
+    echo "     ✓ hadolint installed successfully"
+else
+    echo "     ⚠️  Could not download hadolint (network error), skipping..."
+fi
 
 # yamllint - YAML linter
 echo "  → Installing yamllint..."
