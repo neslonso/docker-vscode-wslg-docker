@@ -32,7 +32,8 @@ sudo apt-get install -y -qq yamllint
 # ansible-lint - Ansible playbook linter (via pip)
 echo "  → Installing ansible-lint..."
 sudo apt-get install -y -qq python3-pip
-sudo pip3 install -q ansible-lint
+# Use --break-system-packages since this is an isolated Docker container
+sudo pip3 install --break-system-packages -q ansible-lint
 
 # Clean up
 sudo apt-get clean
