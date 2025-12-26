@@ -106,7 +106,8 @@ show_help() {
 	echo -e "${white}Usage:${reset} ${cyan}$0${reset} <action> [profile] [mode]" >&2
 	echo "" >&2
 	echo -e "Containerized VSCode launcher displayed via ${white}WSLg${reset}." >&2
-	echo -e "Run from the directory you want to mount as ${yellow}/workspace${reset}." >&2
+	echo -e "Run from the directory you want to mount." >&2
+	echo -e "The directory will be mounted at ${yellow}/<directory-name>${reset} inside the container." >&2
 	echo "" >&2
 	echo -e "${white}Actions:${reset}" >&2
 	echo -e "  ${green}up${reset}         Launch VSCode (foreground, down on close)" >&2
@@ -215,6 +216,7 @@ compose_args="-f $base_compose -f $mode_compose"
 
 export COMPOSE_PROJECT_NAME="$proj_name"
 export PROJECT_DIR="$project_dir"
+export WORKSPACE_NAME="$raw_name"  # Mount point will be /<directory-name>
 export VSCODE_EXTENSIONS_PROFILE="$profile"
 export PROFILE_DIR="$script_dir/profiles/$profile"
 

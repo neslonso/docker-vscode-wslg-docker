@@ -464,7 +464,7 @@ prepare_readme_open() {
 # Launches VSCode in background with:
 # - Unique IPC socket based on hostname
 # - Specific user data dir and extensions dir
-# - Workspace mounted at /workspace
+# - Workspace mounted at path specified by WORKSPACE_PATH env var
 #
 # After launching, waits 3 seconds and opens README if necessary.
 # Uses run_with_docker_perms from docker-setup.sh to handle permissions.
@@ -493,8 +493,11 @@ launch_vscode() {
     echo "🔍 DEBUG: Original command: $*"
 
     # Build command with isolated IPC
-    local vscode_cmd="code --new-window --no-sandbox --user-data-dir=$user_data_dir --extensions-dir=$extensions_dir /workspace"
+    # Use WORKSPACE_PATH if set, otherwise default to /workspace for backward compatibility
+    local workspace_path="${WORKSPACE_PATH:-/workspace}"
+    local vscode_cmd="code --new-window --no-sandbox --user-data-dir=$user_data_dir --extensions-dir=$extensions_dir $workspace_path"
     echo "🔍 DEBUG: Modified command: $vscode_cmd"
+    echo "🔍 DEBUG: Workspace path: $workspace_path"
 
     # Load Docker functions and launch with appropriate permissions
     source /usr/local/lib/docker-setup.sh

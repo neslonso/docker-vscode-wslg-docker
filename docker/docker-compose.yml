@@ -23,9 +23,10 @@ services:
       - PULSE_SERVER
       - VSCODE_EXTENSIONS_PROFILE
       - BROWSER=surf
+      - WORKSPACE_PATH=/${WORKSPACE_NAME}
     volumes:
-      # Project workspace
-      - ${PROJECT_DIR}:/workspace
+      # Project workspace (mounted with original directory name)
+      - ${PROJECT_DIR}:/${WORKSPACE_NAME}
 
       # VSCode profile (read-only)
       - ${PROFILE_DIR}:/home/dev/vsc-wslg-${VSCODE_EXTENSIONS_PROFILE}-profile:ro
