@@ -112,9 +112,9 @@ COPY docker/lib/vscode-setup.sh /usr/local/lib/vscode-setup.sh
 RUN chmod +x /usr/local/lib/docker-setup.sh \
     && chmod +x /usr/local/lib/vscode-setup.sh
 
-# Copiar el entrypoint correspondiente al modo
-# Nota: Los Dockerfiles derivados pueden sobreescribir esto si es necesario
-COPY docker/modes/${ENTRYPOINT_MODE}/entrypoint.sh /usr/local/bin/entrypoint.sh
+# Copiar el entrypoint unificado
+# Usa la variable ENTRYPOINT_MODE en runtime para determinar el comportamiento
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # ============================================================================

@@ -1,14 +1,20 @@
 #!/bin/bash
-set -e
+# ============================================================================
+# Unified Entrypoint for DinD and DooD modes
+# ============================================================================
+# This entrypoint handles both Docker-in-Docker and Docker-out-of-Docker modes
+# based on the ENTRYPOINT_MODE environment variable.
+#
+# DinD: Starts Docker daemon inside container
+# DooD: Configures permissions for host Docker socket
+#
+# Common flow:
+# 1. Docker setup (mode-specific)
+# 2. VSCode configuration
+# 3. Launch VSCode
+# 4. Monitor process
 
-# ============================================================================
-# Entrypoint for DooD (Docker-out-of-Docker) mode
-# ============================================================================
-# This entrypoint:
-# 1. Configures Docker socket permissions from host
-# 2. Configures VSCode and extensions
-# 3. Launches VSCode
-# 4. Monitors the process
+set -e
 
 # Load shared libraries
 source /usr/local/lib/docker-setup.sh
@@ -21,11 +27,25 @@ source /usr/local/lib/vscode-setup.sh
 # Configure permissions on VSCode volumes
 setup_vscode_permissions
 
-# DooD: Configure Docker socket permissions
-setup_docker_socket_permissions
+# Docker setup based on mode
+case "${ENTRYPOINT_MODE}" in
+    dind)
+        echo "🐳 Mode: Docker-in-Docker"
+        start_docker_daemon || exit 1
+        ;;
+    dood)
+        echo "🐳 Mode: Docker-out-of-Docker"
+        setup_docker_socket_permissions
+        ;;
+    *)
+        echo "❌ Error: Unknown ENTRYPOINT_MODE: ${ENTRYPOINT_MODE}"
+        echo "   Expected: 'dind' or 'dood'"
+        exit 1
+        ;;
+esac
 
 # ============================================================================
-# VSCode configuration
+# VSCode configuration (common for both modes)
 # ============================================================================
 
 # VSCode base settings
