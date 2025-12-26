@@ -18,7 +18,7 @@ Entorno completo para desarrollo PHP con Symfony Framework.
 - **YAML Support** (redhat.vscode-yaml)
 - **PHPUnit** (recca0120.vscode-phpunit)
 - **PHP CS Fixer** (junstyle.php-cs-fixer)
-- **GitLens** (eamodio.gitlens)
+- **Git Graph** (mhutchie.git-graph) - Visualización de historial
 - **Docker** (ms-azuretools.vscode-docker)
 
 ### Configuraciones VSCode

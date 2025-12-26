@@ -46,7 +46,6 @@ Entorno completo para desarrollo de infraestructura, scripting y DevOps.
 - **Markdown Preview GitHub Styles** (bierner.markdown-preview-github-styles) - Preview estilo GitHub
 
 #### Git
-- **GitLens** (eamodio.gitlens) - Superpoderes para Git
 - **Git Graph** (mhutchie.git-graph) - Visualización de historial
 
 #### Utilidades
@@ -387,8 +386,7 @@ yq '.services.*.ports' docker-compose.yml
 
 1. **Commits pequeños y atómicos**
 2. **Mensajes descriptivos**
-3. **Usa GitLens** para explorar historial
-4. **Git Graph** para visualizar ramas
+3. **Usa Git Graph** para explorar historial y visualizar ramas
 
 ## Solución de problemas
 

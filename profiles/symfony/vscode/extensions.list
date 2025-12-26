@@ -3,7 +3,7 @@ ms-azuretools.vscode-docker
 ms-vscode-remote.remote-containers
 
 # === GIT ===
-eamodio.gitlens
+mhutchie.git-graph
 
 # === PHP ===
 bmewburn.vscode-intelephense-client

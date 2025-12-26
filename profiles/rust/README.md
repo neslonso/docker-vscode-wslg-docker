@@ -26,7 +26,7 @@ Entorno completo para desarrollo Rust con soporte nativo para compilación cruza
 - **CodeLLDB** (vadimcn.vscode-lldb) - Debugger
 - **crates** (serayuzgur.crates) - Gestor de dependencias
 - **Even Better TOML** (tamasfe.even-better-toml) - Soporte para Cargo.toml
-- **GitLens** (eamodio.gitlens)
+- **Git Graph** (mhutchie.git-graph) - Visualización de historial
 - **Docker** (ms-azuretools.vscode-docker)
 
 ### Configuraciones
