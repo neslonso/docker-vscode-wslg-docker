@@ -459,12 +459,12 @@ prepare_readme_open() {
 }
 
 ##
-# Launches VSCode with isolated configuration
+# Launches VSCode
 #
 # Launches VSCode in background with:
-# - Unique IPC socket based on hostname
 # - Workspace mounted at path specified by WORKSPACE_PATH env var
 # - Uses default locations for user data and extensions
+# - Uses default IPC socket handling
 #
 # After launching, waits 3 seconds and opens README if necessary.
 # Uses run_with_docker_perms from docker-setup.sh to handle permissions.
@@ -481,17 +481,10 @@ prepare_readme_open() {
 launch_vscode() {
     echo "🚀 Starting VSCode GUI..."
 
-    # Isolate VSCode IPC to avoid conflicts between containers
-    export VSCODE_IPC_HOOK_CLI="/tmp/vscode-ipc-$(hostname).sock"
-
-    echo "🔧 IPC Socket: $VSCODE_IPC_HOOK_CLI"
-    echo "🔍 DEBUG: Original command: $*"
-
-    # Build command with isolated IPC
     # Use WORKSPACE_PATH if set, otherwise default to /workspace for backward compatibility
     local workspace_path="${WORKSPACE_PATH:-/workspace}"
     local vscode_cmd="code --new-window --no-sandbox $workspace_path"
-    echo "🔍 DEBUG: Modified command: $vscode_cmd"
+    echo "🔍 DEBUG: VSCode command: $vscode_cmd"
     echo "🔍 DEBUG: Workspace path: $workspace_path"
 
     # Load Docker functions and launch with appropriate permissions
@@ -504,8 +497,7 @@ launch_vscode() {
     # Open README if necessary
     if [ -n "$README_TO_OPEN" ]; then
         echo "👋 Opening README: $README_TO_OPEN"
-        VSCODE_IPC_HOOK_CLI="$VSCODE_IPC_HOOK_CLI" \
-            code "$README_TO_OPEN" 2>/dev/null || true
+        code "$README_TO_OPEN" 2>/dev/null || true
     fi
 }
 
