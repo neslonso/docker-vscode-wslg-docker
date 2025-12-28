@@ -1,0 +1,46 @@
+# ============================================================================
+# Base Docker Compose Configuration
+# ============================================================================
+# This file contains the common configuration for both DinD and DooD modes.
+# Mode-specific settings are defined in override files:
+# - docker-compose.dind.yml (Docker-in-Docker)
+# - docker-compose.dood.yml (Docker-out-of-Docker)
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.dind.yml up
+#   docker-compose -f docker-compose.yml -f docker-compose.dood.yml up
+
+services:
+  vscode:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.base
+    shm_size: '1gb'
+    environment:
+      - DISPLAY
+      - WAYLAND_DISPLAY
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - PULSE_SERVER
+      - VSCODE_EXTENSIONS_PROFILE
+      - BROWSER=surf
+      - WORKSPACE_PATH=/${WORKSPACE_NAME}
+    volumes:
+      # Project workspace (mounted with original directory name)
+      - ${PROJECT_DIR}:/${WORKSPACE_NAME}
+
+      # VSCode profile (read-only)
+      - ${PROFILE_DIR}:/home/dev/vsc-wslg-${VSCODE_EXTENSIONS_PROFILE}-profile:ro
+
+      # WSLg GUI support
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /mnt/wslg:/mnt/wslg
+
+      # VSCode persistent data
+      - vscode-extensions:/home/dev/.vscode
+      - vscode-config:/home/dev/.config/Code
+    restart: "no"
+
+volumes:
+  # VSCode extensions and configuration (shared across modes)
+  vscode-extensions:
+  vscode-config:

@@ -1,0 +1,135 @@
+# Dockerfile base para VSCode con WSLg
+# Contiene toda la configuración común entre DinD y DooD
+#
+# Variables de construcción:
+#   INSTALL_DOCKER_DAEMON: "true" para DinD, "false" para DooD
+#   ENTRYPOINT_MODE: "dind" o "dood" para seleccionar el entrypoint correcto
+
+FROM debian:bookworm-slim
+
+# Variables de construcción con valores por defecto
+ARG INSTALL_DOCKER_DAEMON=false
+ARG ENTRYPOINT_MODE=dood
+
+# Convertir ENTRYPOINT_MODE a variable de entorno para runtime
+ENV ENTRYPOINT_MODE=${ENTRYPOINT_MODE}
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DONT_PROMPT_WSL_INSTALL=CUALQUIER_VALOR
+
+# ============================================================================
+# Dependencias base comunes
+# ============================================================================
+
+# Dependencias comunes para VSCode, navegador y utilidades
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    sudo \
+    jq \
+    xdotool \
+    surf \
+    make \
+    # Dependencias GUI para VSCode/Electron
+    libx11-xcb1 \
+    libxkbfile1 \
+    libsecret-1-0 \
+    libgtk-3-0 \
+    libnss3 \
+    libasound2 \
+    libgbm1 \
+    libxshmfence1 \
+    # Para Remote Containers / devcontainers
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# ============================================================================
+# Dependencias específicas para DinD (condicional)
+# ============================================================================
+
+# Instalar dependencias adicionales solo si se requiere Docker daemon
+RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
+    apt-get update && apt-get install -y --no-install-recommends \
+        iptables \
+        procps \
+    && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# ============================================================================
+# Instalación de Docker
+# ============================================================================
+
+# Configurar repositorio de Docker
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list
+
+# Instalar Docker (daemon + CLI para DinD, solo CLI para DooD)
+RUN apt-get update && \
+    if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
+        # DinD: instalar daemon completo
+        apt-get install -y --no-install-recommends \
+            docker-ce \
+            docker-ce-cli \
+            containerd.io \
+            docker-compose-plugin; \
+    else \
+        # DooD: solo CLI
+        apt-get install -y --no-install-recommends \
+            docker-ce-cli \
+            docker-compose-plugin; \
+    fi \
+    && rm -rf /var/lib/apt/lists/*
+
+# ============================================================================
+# Instalación de VSCode
+# ============================================================================
+
+RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends code \
+    && rm -rf /var/lib/apt/lists/*
+
+# ============================================================================
+# Configuración de usuario
+# ============================================================================
+
+# Usuario dev con sudo sin password
+RUN useradd -ms /bin/bash dev \
+    && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
+    && chmod 0440 /etc/sudoers.d/dev
+
+# Agregar usuario al grupo docker solo si se instaló el daemon
+RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
+        usermod -aG docker dev; \
+    fi
+
+# ============================================================================
+# Copiar bibliotecas y scripts
+# ============================================================================
+
+# Copiar bibliotecas compartidas
+COPY docker/lib/docker-setup.sh /usr/local/lib/docker-setup.sh
+COPY docker/lib/vscode-setup.sh /usr/local/lib/vscode-setup.sh
+RUN chmod +x /usr/local/lib/docker-setup.sh \
+    && chmod +x /usr/local/lib/vscode-setup.sh
+
+# Copiar el entrypoint unificado
+# Usa la variable ENTRYPOINT_MODE en runtime para determinar el comportamiento
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# ============================================================================
+# Configuración final
+# ============================================================================
+
+USER dev
+WORKDIR /
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# VSCode uses default locations:
+# - User data: ~/.config/Code (persisted via vscode-config volume)
+# - Extensions: ~/.vscode/extensions (persisted via vscode-extensions volume)
+# - Workspace path: passed via WORKSPACE_PATH environment variable
+CMD ["code", "--new-window", "--no-sandbox"]

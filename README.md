@@ -1,373 +1,210 @@
-# VSCode Containerizado con WSLg
+# VSCode WSLg Container
 
-Entorno de desarrollo completamente aislado para ejecutar VSCode dentro de un contenedor Docker, renderizando la interfaz gráfica a través de WSLg (Windows Subsystem for Linux GUI).
+Containerized VSCode with GUI support via WSLg, designed for isolated development environments with Docker support.
 
-## Motivación
+## Features
 
-Cuando se trabaja en múltiples proyectos con diferentes stacks tecnológicos, mantener un entorno de desarrollo limpio y reproducible se convierte en un desafío. Esta solución aborda el problema ejecutando VSCode dentro de contenedores Docker, lo que proporciona:
+- **GUI via WSLg** - Full graphical VSCode running in Docker on WSL2
+- **Two Docker modes** - Docker-in-Docker (DinD) or Docker-out-of-Docker (DooD)
+- **Profile system** - Pre-configured environments (DevOps, Rust, Symfony)
+- **Dynamic workspace mounting** - Project directory mounted at `/<directory-name>`
+- **Persistent state** - Extensions and settings preserved across container restarts
+- **Single-instance handling** - Automatically detects and manages running instances
 
-- **Aislamiento completo**: cada proyecto tiene su propio entorno sin contaminar el sistema host.
-- **Reproducibilidad**: el mismo entorno funciona de manera idéntica en cualquier máquina con WSL2.
-- **Perfiles de extensiones**: conjuntos predefinidos de extensiones según el tipo de proyecto.
-- **Integración con Docker**: capacidad de ejecutar contenedores dentro del entorno de desarrollo.
+## Requirements
 
-## Requisitos previos
+- Windows 11 with WSL2 and WSLg enabled
+- Docker installed in WSL2
+- At least 4GB RAM available
 
-- Windows 10/11 con WSL2
-- Una distribución Linux instalada en WSL (por ejemplo, Ubuntu 22.04)
-- Docker instalado en WSL
-- WSLg habilitado (incluido por defecto en Windows 11 y actualizaciones recientes de Windows 10)
+## Quick Start
 
-## Estructura del proyecto
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/docker-vscode-wslg-docker.git
+cd docker-vscode-wslg-docker
+
+# Navigate to your project directory
+cd ~/my-project
+
+# Launch VSCode with a profile (DinD mode by default)
+/path/to/vsc-wslg up devops
+
+# Or with DooD mode
+/path/to/vsc-wslg up devops dood
+```
+
+## Docker Modes
+
+### DinD (Docker-in-Docker) - Default
+- Runs Docker daemon inside the container
+- Fully isolated from host Docker
+- Requires `privileged` mode
+- Persistent storage for Docker data
+
+### DooD (Docker-out-of-Docker)
+- Uses host's Docker daemon via socket mount
+- Shares Docker images/containers with host
+- No `privileged` mode needed
+- Container commands affect host Docker
+
+## Available Profiles
+
+### devops
+Development and DevOps tools:
+- ShellCheck, hadolint, yamllint, ansible-lint
+- Docker, Docker Compose support
+- Shell/Bash debugging and formatting
+- YAML and Markdown support
+
+### rust
+Rust development environment:
+- rust-analyzer LSP
+- CodeLLDB debugger
+- Cargo tools (watch, edit, audit)
+- TOML support
+
+### symfony
+PHP/Symfony development:
+- Intelephense, XDebug
+- Symfony and Twig support
+- PHPUnit integration
+- PHP CS Fixer
+
+## Usage
+
+```bash
+vsc-wslg <action> [profile] [mode]
+```
+
+### Actions
+- `up` - Launch VSCode (foreground, auto-cleanup on exit)
+- `upd` - Launch VSCode (background daemon)
+- `upd-logs` - Launch VSCode (background + follow logs)
+- `build` - Rebuild the Docker image
+- `down` - Stop container (auto-detects mode)
+- `clean` - Stop container and remove volumes
+
+### Examples
+
+```bash
+# Launch DevOps profile in DinD (default)
+vsc-wslg up devops
+
+# Launch Rust profile in DooD mode
+vsc-wslg up rust dood
+
+# Launch without profile (just workspace + Docker)
+vsc-wslg up
+
+# Rebuild DevOps image
+vsc-wslg build devops
+
+# Stop running container
+vsc-wslg down
+
+# Clean up (removes volumes)
+vsc-wslg clean
+```
+
+## Project Structure
 
 ```
 .
-├── vsc-wslg                 # Script principal de control
-├── DinD/                    # Configuración Docker-in-Docker
-│   ├── Dockerfile-vsc-wslg
-│   ├── docker-compose.yml
-│   └── entrypoint.sh
-├── DooD/                    # Configuración Docker-out-of-Docker
-│   ├── Dockerfile-vsc-wslg
-│   ├── docker-compose.yml
-│   └── entrypoint.sh
-├── lib/                     # Bibliotecas auxiliares
-│   └── profile-loader.sh    # Carga perfiles y muestra info
-└── profiles/                # Perfiles de desarrollo
-    ├── symfony/             # Perfil para Symfony/PHP
-    │   ├── docker-compose.yml  # Servicios (PHP, MySQL, Redis)
-    │   ├── manage           # Script de gestión
-    │   ├── scripts/         # Scripts individuales
-    │   │   ├── start.sh
-    │   │   ├── stop.sh
-    │   │   └── logs.sh
-    │   ├── services/        # Dockerfiles de servicios
-    │   │   └── php/
-    │   │       └── Dockerfile
-    │   ├── vscode/          # Config de VSCode
-    │   │   ├── extensions.list
-    │   │   └── settings.json
-    │   └── README.md
-    └── rust/                # Perfil para Rust
-        ├── docker-compose.yml  # Contenedor Rust toolchain
-        ├── manage
-        ├── scripts/
-        ├── services/
-        │   └── rust/
-        │       └── Dockerfile
-        ├── vscode/
-        │   ├── extensions.list
-        │   └── settings.json
-        └── README.md
+├── vsc-wslg              # Main launcher script
+├── docker/               # Docker configuration
+│   ├── Dockerfile.base   # Unified Dockerfile
+│   ├── entrypoint.sh     # Unified entrypoint
+│   ├── docker-compose.yml       # Base compose config
+│   ├── docker-compose.dind.yml  # DinD overrides
+│   ├── docker-compose.dood.yml  # DooD overrides
+│   └── lib/
+│       ├── docker-setup.sh      # Docker daemon functions
+│       └── vscode-setup.sh      # VSCode setup functions
+└── profiles/             # VSCode profiles
+    ├── devops/
+    ├── rust/
+    └── symfony/
+        ├── setup.sh              # System packages installation
+        ├── README.md             # Profile documentation
+        └── vscode/
+            ├── extensions.list   # VSCode extensions
+            └── settings.json     # VSCode settings
 ```
 
-## Modos de operación
+## How It Works
 
-### DooD (Docker-out-of-Docker)
+1. **Workspace Mounting** - Your current directory is mounted at `/<directory-name>` inside the container
+2. **Profile Loading** - Selected profile's extensions and settings are applied
+3. **System Setup** - Profile's `setup.sh` runs once to install system tools (shellcheck, hadolint, etc.)
+4. **VSCode Launch** - VSCode GUI appears via WSLg
+5. **Monitoring** - Container stays alive while VSCode is running
+6. **Cleanup** - Container stops when VSCode closes (in `up` mode)
 
-El contenedor utiliza el daemon Docker del host mediante el montaje de `/var/run/docker.sock`. Los contenedores creados desde VSCode aparecen en el Docker del host.
+## Creating Custom Profiles
 
-**Ventajas**: imagen más ligera, arranque más rápido, recursos compartidos.
+1. Create a new directory in `profiles/`
+2. Add `vscode/extensions.list` with extension IDs
+3. Add `vscode/settings.json` with VSCode settings
+4. Optionally add `setup.sh` for system package installation
+5. Add `README.md` documenting the profile
 
-**Consideraciones**: los contenedores creados son visibles desde el host y comparten el mismo espacio de nombres de redes e imágenes.
-
-### DinD (Docker-in-Docker)
-
-El contenedor ejecuta su propio daemon Docker de forma independiente. Requiere modo privilegiado.
-
-**Ventajas**: aislamiento completo, el entorno Docker es efímero y específico del proyecto.
-
-**Consideraciones**: mayor consumo de recursos, requiere `privileged: true`.
-
-## Instalación
-
-1. Clonar el repositorio en una ubicación accesible desde WSL:
-
-```bash
-git clone https://github.com/tu-usuario/vscode-wslg-docker.git
-cd vscode-wslg-docker
-```
-
-2. Hacer ejecutable el script principal:
-
-```bash
-chmod +x vsc-wslg
-```
-
-3. Opcionalmente, añadir al PATH o crear un alias:
-
-```bash
-# En ~/.bashrc o ~/.zshrc
-alias vsc='/ruta/al/repositorio/vsc-wslg'
-```
-
-## Uso
-
-El script se ejecuta desde el directorio del proyecto que se desea abrir y :
-
-```bash
-cd /ruta/a/mi/proyecto
-/ruta/al/repositorio/vsc-wslg <modo> <acción> [perfil]
-```
-
-IMPORTANTE:
-Solo el nombre del directorio desde donde se ejecuta el script es utilizado para los volumenes de docker.
-Esto siginifica que si lanzas el scripts desde dos directorios con el mismo nombre (aunque rutas distintas) utilizaran los mismos volumnes de docker.
-
-### Acciones disponibles
-
-| Acción     | Descripción                                           |
-|------------|-------------------------------------------------------|
-| `build`    | Reconstruye la imagen Docker                          |
-| `up`       | Lanza VSCode en primer plano (se detiene al cerrar)   |
-| `upd`      | Lanza VSCode en segundo plano                         |
-| `upd-logs` | Lanza en segundo plano mostrando logs                 |
-| `down`     | Detiene el contenedor                                 |
-| `clean`    | Detiene el contenedor y elimina volúmenes asociados   |
-
-### Ejemplos
-
-```bash
-# Lanzar VSCode con modo DooD y perfil Symfony
-./vsc-wslg dood up symfony
-
-# Lanzar en segundo plano con DinD
-./vsc-wslg dind upd symfony
-
-# Detener el contenedor
-./vsc-wslg dood down
-
-# Limpiar completamente (elimina extensiones y configuración del proyecto)
-./vsc-wslg dood clean
-```
-
-## Perfiles de desarrollo
-
-Los perfiles permiten configurar entornos completos según el tipo de proyecto. Cada perfil incluye:
-
-- **VSCode**: Extensiones y configuraciones personalizadas
-- **Infraestructura**: Servicios separados (bases de datos, toolchains, etc.) gestionados con docker-compose
-- **Scripts de gestión**: Comandos para iniciar/detener/gestionar los servicios
-- **Metadatos**: Descripción, versión, información para el usuario
-
-### Arquitectura de perfiles
-
-```
-┌─────────────────────────────────────────────────┐
-│  VSCode Container (GUI)                         │
-│  - Solo VSCode + extensiones                    │
-│  - No contiene toolchains ni servicios          │
-│  - Monta: ~/vsc-wslg-{perfil}-profile (RO)     │
-└────────────────┬────────────────────────────────┘
-                 │
-                 │ Acceso via docker-compose
-                 ↓
-┌─────────────────────────────────────────────────┐
-│  Infraestructura del Perfil                     │
-│  - PHP, MySQL, Redis (Symfony)                  │
-│  - Rust toolchain (Rust)                        │
-│  - Servicios específicos del proyecto           │
-└─────────────────────────────────────────────────┘
-```
-
-### Estructura de un perfil
-
-```
-profiles/
-└── nombre-perfil/
-    ├── docker-compose.yml    # Servicios de infraestructura
-    ├── manage                # Script único de gestión
-    ├── scripts/              # Scripts individuales
-    │   ├── start.sh
-    │   ├── stop.sh
-    │   └── logs.sh
-    ├── services/             # Dockerfiles de servicios
-    │   └── servicio/
-    │       └── Dockerfile
-    ├── vscode/               # Configuraciones VSCode
-    │   ├── extensions.list
-    │   └── settings.json
-    └── README.md             # Documentación del perfil
-```
-
-### Perfiles incluidos
-
-#### Symfony (PHP)
-
-Stack completo para desarrollo PHP con Symfony Framework.
-
-**Infraestructura (servicios separados):**
-- PHP 8.2-fpm con Composer y Symfony CLI
-- MySQL 8.0
-- Redis 7
-
-**Extensiones VSCode:**
-- PHP IntelliSense, Xdebug, DocBlocker
-- Soporte para Symfony y Twig
-- YAML, XML, archivos de entorno
-- PHPUnit y PHP CS Fixer
-- GitLens, Docker
-
-**Uso:**
-```bash
-# 1. Levantar VSCode
-./vsc-wslg dood up symfony
-
-# 2. Desde el terminal de VSCode, levantar infraestructura
-~/vsc-wslg-symfony-profile/manage start
-
-# 3. Trabajar normalmente
-composer install
-bin/console doctrine:migrations:migrate
-```
-
-**Gestión:**
-```bash
-~/vsc-wslg-symfony-profile/manage {start|stop|restart|logs|status}
-```
-
-#### Rust
-
-Entorno para desarrollo Rust con soporte para compilación cruzada a Windows.
-
-**Infraestructura (servicio separado):**
-- Contenedor Rust con toolchain completo
-- Targets: Linux y Windows (x86_64-pc-windows-gnu)
-- MinGW-w64 para cross-compilation
-- Componentes: clippy, rustfmt, rust-src
-- Cargo tools: watch, edit, expand, tree
-
-**Extensiones VSCode:**
-- rust-analyzer (LSP)
-- CodeLLDB (debugger)
-- crates (gestor de dependencias)
-- Even Better TOML
-
-**Uso:**
-```bash
-# 1. Levantar VSCode
-./vsc-wslg dood up rust
-
-# 2. Desde el terminal de VSCode, levantar contenedor Rust
-~/vsc-wslg-rust-profile/manage start
-
-# 3. Compilar
-cargo build --release                                # Linux
-cargo build --target x86_64-pc-windows-gnu --release # Windows
-```
-
-**Gestión:**
-```bash
-~/vsc-wslg-rust-profile/manage {start|stop|restart|logs|shell|status}
-```
-
-### Crear un perfil personalizado
-
-1. **Crear estructura base:**
-
-```bash
-mkdir -p profiles/mi-perfil/{vscode,services,scripts}
-cd profiles/mi-perfil
-```
-
-2. **Crear `docker-compose.yml`** para la infraestructura:
-
-```yaml
-services:
-  mi-servicio:
-    build: ./services/mi-servicio
-    container_name: ${COMPOSE_PROJECT_NAME:-miperfil}_servicio
-    volumes:
-      - ${WORKSPACE_DIR:-/workspace}:/workspace:cached
-    working_dir: /workspace
-    restart: unless-stopped
-```
-
-3. **Crear Dockerfile del servicio** en `services/mi-servicio/Dockerfile`
-
-4. **Crear script `manage`**:
-
+Example `setup.sh`:
 ```bash
 #!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="/workspace"
-export WORKSPACE_DIR COMPOSE_PROJECT_NAME
+set -e
 
-case "$1" in
-    start) bash "$SCRIPT_DIR/scripts/start.sh" ;;
-    stop) bash "$SCRIPT_DIR/scripts/stop.sh" ;;
-    *) echo "Uso: $0 {start|stop}"; exit 1 ;;
-esac
+echo "📦 Installing tools..."
+sudo apt-get update -qq
+sudo apt-get install -y -qq your-package
+sudo apt-get clean
+sudo rm -rf /var/lib/apt/lists/*
 ```
 
-5. **Crear scripts** en `scripts/`:
-   - `start.sh`: docker-compose up
-   - `stop.sh`: docker-compose down
+## Advanced Configuration
 
-6. **Configurar VSCode** en `vscode/`:
-   - `extensions.list`: extensiones a instalar
-   - `settings.json`: configuraciones personalizadas
+### Multiple Instances
+The script detects running instances and prompts you to:
+1. Cancel and keep existing instance
+2. Close existing and launch new one
 
-7. **Crear `README.md`** con la documentación del perfil
+### Persistent Volumes
+- `vscode-extensions` - VSCode extensions
+- `vscode-config` - VSCode settings and state
+- `dind-data` - Docker data (DinD mode only)
 
-8. **Utilizarlo:**
+### Environment Variables
+- `WORKSPACE_PATH` - Workspace mount point inside container
+- `VSCODE_EXTENSIONS_PROFILE` - Active profile name
+- `PROJECT_DIR` - Host project directory
+- `WORKSPACE_NAME` - Directory name (for mount path)
 
-```bash
-./vsc-wslg dood up mi-perfil
-```
+## Troubleshooting
 
-### Funcionamiento de los perfiles
+### VSCode doesn't appear
+- Check WSLg is enabled: `wslg.exe`
+- Verify DISPLAY variable: `echo $DISPLAY`
+- Check container logs: `docker logs <container-name>`
 
-Al arrancar VSCode con un perfil:
+### Profile setup fails
+- Network issues: Check internet connectivity
+- Permission errors: Verify `setup.sh` is executable
 
-1. **Monta perfil**: El perfil se monta en `~/vsc-wslg-{perfil}-profile` (read-only)
-2. **Aplica configuraciones**: Merge inteligente de `settings.json` (usuario tiene prioridad)
-3. **Instala extensiones**: Lee `vscode/extensions.list` e instala las necesarias
-4. **Muestra mensaje**: Indica el perfil activo y la ruta al README.md
-5. **Primera vez**: Abre el README.md automáticamente en VSCode para mostrar la documentación
+### Docker-in-Docker issues
+- Requires privileged mode (security consideration)
+- May conflict with host Docker socket
 
-La infraestructura es **independiente** y se gestiona **manualmente** desde el terminal de VSCode usando los scripts del perfil
+### Extensions don't install
+- Clear extension cache: `vsc-wslg clean`
+- Check profile's `extensions.list` syntax
 
-## Persistencia
+## License
 
-El sistema mantiene persistencia entre sesiones mediante volúmenes Docker nombrados según el proyecto:
+See [LICENSE](LICENSE) file for details.
 
-- `{proyecto}_vscode-extensions`: extensiones instaladas
-- `{proyecto}_vscode-config`: configuración de VSCode
-- `{proyecto}_dind-data`: datos de Docker (solo en modo DinD)
+## Contributing
 
-Esto permite que cada proyecto mantenga su propia configuración de forma independiente.
-
-## Notas
-
-- El entrypoint ajusta automáticamente los permisos del socket. Si hay problemas, verificar que el usuario de WSL pertenece al grupo `docker`:
-
-```bash
-groups $USER
-```
-
-## Arquitectura técnica
-
-El sistema utiliza las siguientes tecnologías:
-
-- **Debian Bookworm**: imagen base ligera y estable
-- **WSLg**: permite renderizar aplicaciones GUI de Linux en Windows mediante X11/Wayland
-- **xdotool**: gestión de ventanas para el workaround de posicionamiento
-- **jq**: manipulación de configuración JSON
-
-La interfaz gráfica se transmite al host Windows mediante los volúmenes de WSLg:
-- `/tmp/.X11-unix`: socket X11
-- `/mnt/wslg`: runtime de Wayland y PulseAudio
-
-## Contribuir
-
-Las contribuciones son bienvenidas. Por favor:
-
-1. Abrir un issue describiendo el cambio propuesto
-2. Crear un fork del repositorio
-3. Desarrollar en una rama con nombre descriptivo
-4. Enviar un pull request
-
-## Licencia
-
-Este proyecto está licenciado bajo la [MIT License](LICENSE).
+Contributions welcome! Please ensure:
+- Code follows existing patterns
+- Scripts are shellcheck-compliant
+- Documentation is updated

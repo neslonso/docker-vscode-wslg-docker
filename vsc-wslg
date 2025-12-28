@@ -2,7 +2,97 @@
 set -e
 
 ########################################################################################################################
-# Funciones
+# Functions
+
+check_running_instances() {
+	# Search for running vsc_* containers (excluding current one)
+	local running=$(docker ps --filter "name=vsc_" --format "{{.Names}}\t{{.Image}}\t{{.Label \"com.docker.compose.project.working_dir\"}}" 2>/dev/null | grep -v "^${proj_name}_")
+
+	if [ -z "$running" ]; then
+		return 0  # No instances, continue
+	fi
+
+	# There are instance(s) running
+	local reset='\033[0m'
+	local yellow='\033[33m'
+	local cyan='\033[36m'
+	local white='\033[97m'
+	local green='\033[32m'
+
+	echo "" >&2
+	echo -e "${yellow}⚠️  There's already a vsc-wslg instance running:${reset}" >&2
+	echo "" >&2
+
+	# Show details of each instance
+	while IFS=$'\t' read -r container image workdir; do
+		local project_name="${container%_vscode_*}"
+		local mode_type="DooD"
+		if echo "$image" | grep -q "dind"; then
+			mode_type="DinD"
+		fi
+		echo -e "   ${white}Project:${reset}    $project_name (${mode_type})" >&2
+		echo -e "   ${white}Container:${reset}  $container" >&2
+		[ -n "$workdir" ] && echo -e "   ${white}Workspace:${reset}  $workdir" >&2
+		echo "" >&2
+	done <<< "$running"
+
+	echo -e "${white}What do you want to do?${reset}" >&2
+	echo -e "  ${green}1)${reset} Cancel (keep existing instance)" >&2
+	echo -e "  ${green}2)${reset} Close existing instance and open this one" >&2
+	echo "" >&2
+
+	read -p "Option [1-2]: " choice
+
+	case "$choice" in
+		1)
+			echo -e "${cyan}✓${reset} Operation cancelled" >&2
+			exit 0
+			;;
+		2)
+			echo -e "${cyan}🛑${reset} Closing existing instance(s)..." >&2
+			# Stop all vsc_* instances
+			while IFS=$'\t' read -r container _rest; do
+				# Get COMPOSE_PROJECT_NAME from container label
+				local project=$(docker inspect "$container" --format='{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null)
+
+				# Fallback to parsing if no label
+				if [ -z "$project" ]; then
+					project="${container%[-_]vscode[-_]*}"
+				fi
+
+				echo "   🔍 DEBUG: Container name: $container" >&2
+				echo "   🔍 DEBUG: Extracted project: $project" >&2
+
+				# Determine mode and compose file
+				local existing_mode="dood"
+				local image_name=$(docker inspect "$container" --format='{{.Config.Image}}' 2>/dev/null)
+				echo "   🔍 DEBUG: Image: $image_name" >&2
+
+				if echo "$image_name" | grep -q "dind"; then
+					existing_mode="dind"
+				fi
+				echo "   🔍 DEBUG: Mode: $existing_mode" >&2
+
+				local base_compose="$script_dir/docker/docker-compose.yml"
+				local mode_compose="$script_dir/docker/docker-compose.${existing_mode}.yml"
+				echo "   🔍 DEBUG: Compose files: $base_compose + $mode_compose" >&2
+				echo "   🔍 DEBUG: Running: COMPOSE_PROJECT_NAME=$project docker compose -f $base_compose -f $mode_compose down" >&2
+
+				# Stop using the correct compose files
+				COMPOSE_PROJECT_NAME="$project" docker compose -f "$base_compose" -f "$mode_compose" down 2>&1 | sed 's/^/      /'
+				local exit_code=$?
+				echo "   🔍 DEBUG: Exit code: $exit_code" >&2
+			done <<< "$running"
+			echo -e "${green}✓${reset} Done, proceeding to open new instance..." >&2
+			echo "" >&2
+			return 0  # Continue with up
+			;;
+		*)
+			echo -e "${yellow}✗${reset} Invalid option, cancelling" >&2
+			exit 1
+			;;
+	esac
+}
 
 show_help() {
 	local reset='\033[0m'
@@ -13,24 +103,25 @@ show_help() {
 	local white='\033[97m'
 
 	echo "" >&2
-	echo -e "${white}Uso:${reset} ${cyan}$0${reset} [${magenta}dood${reset}|${magenta}dind${reset}] <acción> [perfil]" >&2
+	echo -e "${white}Usage:${reset} ${cyan}$0${reset} <action> [profile] [mode]" >&2
 	echo "" >&2
-	echo -e "Lanzador de VSCode containerizado mostrado via ${white}WSLg${reset}." >&2
-	echo -e "Ejecutar desde el directorio que se desee montar como ${yellow}/workspace${reset}." >&2
+	echo -e "Containerized VSCode launcher displayed via ${white}WSLg${reset}." >&2
+	echo -e "Run from the directory you want to mount." >&2
+	echo -e "The directory will be mounted at ${yellow}/<directory-name>${reset} inside the container." >&2
 	echo "" >&2
-	echo -e "${white}Modo:${reset}" >&2
-	echo -e "  ${magenta}dood${reset}  → Docker-out-of-Docker (usa el daemon de Docker del host via /var/run/docker.sock)" >&2
-	echo -e "  ${magenta}dind${reset}  → Docker-in-Docker (daemon Docker dentro del contenedor)" >&2
+	echo -e "${white}Actions:${reset}" >&2
+	echo -e "  ${green}up${reset}         Launch VSCode (foreground, down on close)" >&2
+	echo -e "  ${green}upd${reset}        Launch VSCode (background)" >&2
+	echo -e "  ${green}upd-logs${reset}   Launch VSCode (background + logs)" >&2
+	echo -e "  ${green}build${reset}      Rebuild the image" >&2
+	echo -e "  ${green}down${reset}       Stop container (auto-detects mode)" >&2
+	echo -e "  ${green}clean${reset}      Stop container and remove volumes (auto-detects mode)" >&2
 	echo "" >&2
-	echo -e "${white}Acciones:${reset}" >&2
-	echo -e "  ${green}build${reset}      Reconstruir la imagen" >&2
-	echo -e "  ${green}up${reset}         Lanzar VSCode (foreground, down al cerrar)" >&2
-	echo -e "  ${green}upd${reset}        Lanzar VSCode (background)" >&2
-	echo -e "  ${green}upd-logs${reset}   Lanzar VSCode (background + logs)" >&2
-	echo -e "  ${green}down${reset}       Parar contenedor" >&2
-	echo -e "  ${green}clean${reset}      Parar contenedor y borrar volúmenes" >&2
+	echo -e "${white}Modes:${reset}" >&2
+	echo -e "  ${magenta}dind${reset}  → Docker-in-Docker (default)" >&2
+	echo -e "  ${magenta}dood${reset}  → Docker-out-of-Docker" >&2
 	echo "" >&2
-	echo -e "${white}Perfiles disponibles:${reset}" >&2
+	echo -e "${white}Available profiles:${reset}" >&2
 	for dir in "$script_dir"/profiles/*/; do
 		if [ -d "$dir" ]; then
 			profile_name=$(basename "$dir")
@@ -38,9 +129,12 @@ show_help() {
 		fi
 	done
 	echo "" >&2
-	echo -e "${white}Ejemplos:${reset}" >&2
-	echo -e "  ${cyan}$0${reset} ${magenta}dood${reset} ${green}up${reset} symfony" >&2
-	echo -e "  ${cyan}$0${reset} ${magenta}dind${reset} ${green}down${reset} symfony" >&2
+	echo -e "${white}Examples:${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset} devops              ${white}# Launch devops profile in dind (default)${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset} devops dood         ${white}# Launch devops in dood mode${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset}                     ${white}# Launch without profile in dind${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}build${reset} devops           ${white}# Rebuild devops image${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}down${reset}                   ${white}# Stop running container${reset}" >&2
 	echo "" >&2
 	exit 1
 }
@@ -48,88 +142,120 @@ show_help() {
 ########################################################################################################################
 # Script
 
-# Directorio desde donde se ejecuta este script
+# Parse arguments: <action> [profile] [mode]
+action="$1"
+profile="$2"
+mode="${3:-dind}"  # Default to dind
 
-mode="$1"
-action="$2"
-#profile="${3:-symfony}"
-profile="$3"
-
-# Directorio donde vive este script
+# Directory where this script lives
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 
-# Directorio del proyecto (desde donde se ejecuta este script)
+# Project directory (from where this script is executed)
 project_dir="$PWD"
 
-# Nombre del proyecto según la carpeta actual
+# Project name based on current folder
 raw_name="$(basename "$PWD")"
 safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
 proj_name="vsc_${safe_name}"
 
-# Selección del docker-compose según modo
+# Validate action
+if [ -z "$action" ]; then
+	echo "✗ Action missing." >&2
+	show_help
+	exit 1
+fi
+
+# For down/clean actions, auto-detect mode from running container
+if [ "$action" = "down" ] || [ "$action" = "clean" ]; then
+	# Try to detect mode from running container
+	running_container=$(docker ps --filter "name=${proj_name}" --format "{{.Names}}" 2>/dev/null | head -1)
+
+	if [ -n "$running_container" ]; then
+		image_name=$(docker inspect "$running_container" --format='{{.Config.Image}}' 2>/dev/null)
+		if echo "$image_name" | grep -q "dind"; then
+			mode="dind"
+		else
+			mode="dood"
+		fi
+	fi
+	# If no container running, use default mode or provided mode
+fi
+
+# Validate mode
 case "$mode" in
-	dood)
-		compose_file="$script_dir/DooD/docker-compose.yml"
-		;;
-	dind)
-		compose_file="$script_dir/DinD/docker-compose.yml"
+	dood|dind)
+		# Valid mode
 		;;
 	*)
-		echo "✗ Modo desconocido: $mode" >&2
+		echo "✗ Unknown mode: $mode" >&2
+		echo "   Valid modes: dind, dood" >&2
 		show_help
 		exit 1
 		;;
 esac
 
-if [ ! -f "$compose_file" ]; then
-	echo "✗ No se encontró el docker-compose para el modo '$mode': $compose_file" >&2
+# Select docker-compose files according to mode
+base_compose="$script_dir/docker/docker-compose.yml"
+mode_compose="$script_dir/docker/docker-compose.${mode}.yml"
+
+if [ ! -f "$base_compose" ]; then
+	echo "✗ Couldn't find base docker-compose: $base_compose" >&2
 	exit 1
 fi
 
-if [ -z "$action" ]; then
-	echo "✗ Falta la acción." >&2
-	show_help
+if [ ! -f "$mode_compose" ]; then
+	echo "✗ Couldn't find docker-compose for mode '$mode': $mode_compose" >&2
 	exit 1
 fi
+
+# Compose file arguments for docker compose command
+compose_args="-f $base_compose -f $mode_compose"
 
 ########################################################################################################################
-# Variables de entorno comunes
+# Common environment variables
 
 export COMPOSE_PROJECT_NAME="$proj_name"
 export PROJECT_DIR="$project_dir"
+export WORKSPACE_NAME="$raw_name"  # Mount point will be /<directory-name>
 export VSCODE_EXTENSIONS_PROFILE="$profile"
 export PROFILE_DIR="$script_dir/profiles/$profile"
 
 ########################################################################################################################
-# Ejecución
+# Execution
 
 case "$action" in
 	build)
-		# a rebuild le da igual el COMPOSE_PROJECT_NAME pq no llega a crear contenedores ni redes
-		docker compose -f "$compose_file" build
+		# Rebuild doesn't care about COMPOSE_PROJECT_NAME as it doesn't create containers or networks
+		docker compose $compose_args build
 		;;
 	up)
+		# Check if there are other instances running
+		check_running_instances
 		#COMPOSE_PROJECT_NAME="$proj_name" \
 		#PROJECT_DIR="$project_dir" \
-		docker compose -f "$compose_file" up
-		docker compose -f "$compose_file" down
+		docker compose $compose_args up
+		docker compose $compose_args down
 		;;
 	upd)
-		docker compose -f "$compose_file" up -d
+		# Check if there are other instances running
+		check_running_instances
+		docker compose $compose_args up -d
 		;;
 	upd-logs)
-		docker compose -f "$compose_file" up -d
-		docker compose -f "$compose_file" logs -f
+		# Check if there are other instances running
+		check_running_instances
+		docker compose $compose_args up -d
+		docker compose $compose_args logs -f
 		;;
 	down)
-		docker compose -f "$compose_file" down
+		docker compose $compose_args down
 		;;
 	clean)
-		docker compose -f "$compose_file" down -v
-		echo "✓ Volúmenes eliminados: ${proj_name}_vscode-extensions, ${proj_name}_vscode-config"
+		docker compose $compose_args down -v
+		echo "✓ Volumes removed: ${proj_name}_vscode-extensions, ${proj_name}_vscode-config"
 		;;
 	*)
-		echo "✗ Acción desconocida: $action" >&2
+		echo "✗ Unknown action: $action" >&2
 		show_help
 		exit 1
 		;;

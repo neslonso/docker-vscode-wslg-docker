@@ -1,0 +1,24 @@
+# ============================================================================
+# Docker-out-of-Docker (DooD) Mode - Override Configuration
+# ============================================================================
+# This file extends docker-compose.yml with DooD-specific settings.
+#
+# DooD Mode Features:
+# - Uses host's Docker daemon via socket binding
+# - No privileged mode required
+# - Shares Docker daemon with host
+# - Container commands affect host Docker directly
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.dood.yml up
+
+services:
+  vscode:
+    build:
+      args:
+        INSTALL_DOCKER_DAEMON: "false"
+        ENTRYPOINT_MODE: "dood"
+    image: vscode-wslg-dood
+    volumes:
+      # Mount host Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock
