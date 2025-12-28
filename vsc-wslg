@@ -94,6 +94,82 @@ check_running_instances() {
 	esac
 }
 
+show_info() {
+	local reset='\033[0m'
+	local cyan='\033[36m'
+	local yellow='\033[33m'
+	local green='\033[32m'
+	local magenta='\033[35m'
+	local white='\033[97m'
+	local profile_arg="$1"
+
+	# If a profile name is provided, show its README
+	if [ -n "$profile_arg" ]; then
+		local profile_readme="$script_dir/profiles/$profile_arg/README.md"
+
+		if [ ! -d "$script_dir/profiles/$profile_arg" ]; then
+			echo "" >&2
+			echo -e "${yellow}✗${reset} Profile '${magenta}${profile_arg}${reset}' not found" >&2
+			echo "" >&2
+			echo -e "${white}Available profiles:${reset}" >&2
+			for dir in "$script_dir"/profiles/*/; do
+				if [ -d "$dir" ]; then
+					profile_name=$(basename "$dir")
+					echo -e "  ${magenta}${profile_name}${reset}" >&2
+				fi
+			done
+			echo "" >&2
+			exit 1
+		fi
+
+		if [ ! -f "$profile_readme" ]; then
+			echo "" >&2
+			echo -e "${yellow}⚠${reset}  Profile '${magenta}${profile_arg}${reset}' has no README.md" >&2
+			echo "" >&2
+			exit 1
+		fi
+
+		# Show README using less with colors
+		less -R "$profile_readme"
+		exit 0
+	fi
+
+	# No profile specified: list all profiles with descriptions
+	echo "" >&2
+	echo -e "${white}Available Development Profiles${reset}" >&2
+	echo -e "${white}==============================${reset}" >&2
+	echo "" >&2
+
+	for dir in "$script_dir"/profiles/*/; do
+		if [ -d "$dir" ]; then
+			profile_name=$(basename "$dir")
+			readme_file="$dir/README.md"
+
+			# Extract first line description from README if it exists
+			local description=""
+			if [ -f "$readme_file" ]; then
+				# Get the first non-empty, non-heading line after the title
+				description=$(grep -m 1 "^[^#]" "$readme_file" | sed 's/^[[:space:]]*//' | head -c 80)
+				if [ -z "$description" ]; then
+					description="No description available"
+				fi
+			else
+				description="No documentation available"
+			fi
+
+			echo -e "${magenta}${profile_name}${reset}" >&2
+			echo -e "  ${description}..." >&2
+			echo "" >&2
+		fi
+	done
+
+	echo -e "${white}Usage:${reset}" >&2
+	echo -e "  ${cyan}$0 info <profile>${reset}  - Show detailed profile documentation" >&2
+	echo -e "  ${cyan}$0 up <profile>${reset}    - Launch VSCode with profile" >&2
+	echo "" >&2
+	exit 0
+}
+
 show_help() {
 	local reset='\033[0m'
 	local cyan='\033[36m'
@@ -103,17 +179,20 @@ show_help() {
 	local white='\033[97m'
 
 	echo "" >&2
-	echo -e "${white}Usage:${reset} ${cyan}$0${reset} <action> [profile] [mode]" >&2
+	echo -e "${white}Usage:${reset}" >&2
+	echo -e "  ${cyan}$0${reset} <action> [profile] [mode]" >&2
+	echo -e "  ${cyan}$0${reset} build [mode]" >&2
 	echo "" >&2
 	echo -e "Containerized VSCode launcher displayed via ${white}WSLg${reset}." >&2
 	echo -e "Run from the directory you want to mount." >&2
 	echo -e "The directory will be mounted at ${yellow}/<directory-name>${reset} inside the container." >&2
 	echo "" >&2
 	echo -e "${white}Actions:${reset}" >&2
+	echo -e "  ${green}info${reset}       List profiles or show profile details" >&2
 	echo -e "  ${green}up${reset}         Launch VSCode (foreground, down on close)" >&2
 	echo -e "  ${green}upd${reset}        Launch VSCode (background)" >&2
 	echo -e "  ${green}upd-logs${reset}   Launch VSCode (background + logs)" >&2
-	echo -e "  ${green}build${reset}      Rebuild the image" >&2
+	echo -e "  ${green}build${reset}      Rebuild Docker image for specified mode" >&2
 	echo -e "  ${green}down${reset}       Stop container (auto-detects mode)" >&2
 	echo -e "  ${green}clean${reset}      Stop container and remove volumes (auto-detects mode)" >&2
 	echo "" >&2
@@ -121,19 +200,14 @@ show_help() {
 	echo -e "  ${magenta}dind${reset}  → Docker-in-Docker (default)" >&2
 	echo -e "  ${magenta}dood${reset}  → Docker-out-of-Docker" >&2
 	echo "" >&2
-	echo -e "${white}Available profiles:${reset}" >&2
-	for dir in "$script_dir"/profiles/*/; do
-		if [ -d "$dir" ]; then
-			profile_name=$(basename "$dir")
-			echo -e "  ${magenta}${profile_name}${reset}" >&2
-		fi
-	done
-	echo "" >&2
 	echo -e "${white}Examples:${reset}" >&2
-	echo -e "  ${cyan}$0${reset} ${green}up${reset} devops              ${white}# Launch devops profile in dind (default)${reset}" >&2
-	echo -e "  ${cyan}$0${reset} ${green}up${reset} devops dood         ${white}# Launch devops in dood mode${reset}" >&2
-	echo -e "  ${cyan}$0${reset} ${green}up${reset}                     ${white}# Launch without profile in dind${reset}" >&2
-	echo -e "  ${cyan}$0${reset} ${green}build${reset} devops           ${white}# Rebuild devops image${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}info${reset}                   ${white}# List available profiles${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}info${reset} python            ${white}# Show python profile details${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset} python              ${white}# Launch python profile in dind${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset} rust dood           ${white}# Launch rust in dood mode${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}up${reset}                     ${white}# Launch without profile${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}build${reset}                  ${white}# Rebuild dind image (default)${reset}" >&2
+	echo -e "  ${cyan}$0${reset} ${green}build${reset} dood             ${white}# Rebuild dood image${reset}" >&2
 	echo -e "  ${cyan}$0${reset} ${green}down${reset}                   ${white}# Stop running container${reset}" >&2
 	echo "" >&2
 	exit 1
@@ -141,11 +215,6 @@ show_help() {
 
 ########################################################################################################################
 # Script
-
-# Parse arguments: <action> [profile] [mode]
-action="$1"
-profile="$2"
-mode="${3:-dind}"  # Default to dind
 
 # Directory where this script lives
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
@@ -158,11 +227,33 @@ raw_name="$(basename "$PWD")"
 safe_name="$(printf '%s' "$raw_name" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
 proj_name="vsc_${safe_name}"
 
+# Parse arguments - different for 'build' vs other actions
+action="$1"
+
 # Validate action
 if [ -z "$action" ]; then
 	echo "✗ Action missing." >&2
 	show_help
 	exit 1
+fi
+
+# Handle 'info' action early (doesn't need mode validation or compose files)
+if [ "$action" = "info" ]; then
+	profile="$2"
+	show_info "$profile"
+	exit 0
+fi
+
+# Parse arguments based on action type
+if [ "$action" = "build" ]; then
+	# build [mode]
+	# Second argument is mode (not profile), since builds are mode-specific not profile-specific
+	mode="${2:-dind}"
+	profile=""
+else
+	# Other actions: <action> [profile] [mode]
+	profile="$2"
+	mode="${3:-dind}"
 fi
 
 # For down/clean actions, auto-detect mode from running container

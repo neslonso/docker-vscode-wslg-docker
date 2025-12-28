@@ -6,7 +6,7 @@ Containerized VSCode with GUI support via WSLg, designed for isolated developmen
 
 - **GUI via WSLg** - Full graphical VSCode running in Docker on WSL2
 - **Two Docker modes** - Docker-in-Docker (DinD) or Docker-out-of-Docker (DooD)
-- **Profile system** - Pre-configured environments (DevOps, Rust, Symfony)
+- **Profile system** - Pre-configured development environments with customizable tools and extensions
 - **Dynamic workspace mounting** - Project directory mounted at `/<directory-name>`
 - **Persistent state** - Extensions and settings preserved across container restarts
 - **Single-instance handling** - Automatically detects and manages running instances
@@ -24,14 +24,17 @@ Containerized VSCode with GUI support via WSLg, designed for isolated developmen
 git clone https://github.com/yourusername/docker-vscode-wslg-docker.git
 cd docker-vscode-wslg-docker
 
+# See available profiles
+./vsc-wslg info
+
 # Navigate to your project directory
 cd ~/my-project
 
 # Launch VSCode with a profile (DinD mode by default)
-/path/to/vsc-wslg up devops
+/path/to/vsc-wslg up <profile>
 
 # Or with DooD mode
-/path/to/vsc-wslg up devops dood
+/path/to/vsc-wslg up <profile> dood
 ```
 
 ## Docker Modes
@@ -48,57 +51,45 @@ cd ~/my-project
 - No `privileged` mode needed
 - Container commands affect host Docker
 
-## Available Profiles
-
-### devops
-Development and DevOps tools:
-- ShellCheck, hadolint, yamllint, ansible-lint
-- Docker, Docker Compose support
-- Shell/Bash debugging and formatting
-- YAML and Markdown support
-
-### rust
-Rust development environment:
-- rust-analyzer LSP
-- CodeLLDB debugger
-- Cargo tools (watch, edit, audit)
-- TOML support
-
-### symfony
-PHP/Symfony development:
-- Intelephense, XDebug
-- Symfony and Twig support
-- PHPUnit integration
-- PHP CS Fixer
-
 ## Usage
 
 ```bash
 vsc-wslg <action> [profile] [mode]
+vsc-wslg build [mode]
 ```
 
 ### Actions
+- `info` - List available profiles or show profile details
 - `up` - Launch VSCode (foreground, auto-cleanup on exit)
 - `upd` - Launch VSCode (background daemon)
 - `upd-logs` - Launch VSCode (background + follow logs)
-- `build` - Rebuild the Docker image
+- `build` - Rebuild Docker image for specified mode (dind/dood)
 - `down` - Stop container (auto-detects mode)
 - `clean` - Stop container and remove volumes
 
 ### Examples
 
 ```bash
-# Launch DevOps profile in DinD (default)
-vsc-wslg up devops
+# List available profiles
+vsc-wslg info
 
-# Launch Rust profile in DooD mode
+# Show details about a specific profile
+vsc-wslg info python
+
+# Launch a profile in DinD (default)
+vsc-wslg up python
+
+# Launch a profile in DooD mode
 vsc-wslg up rust dood
 
 # Launch without profile (just workspace + Docker)
 vsc-wslg up
 
-# Rebuild DevOps image
-vsc-wslg build devops
+# Rebuild DinD image (default)
+vsc-wslg build
+
+# Rebuild DooD image
+vsc-wslg build dood
 
 # Stop running container
 vsc-wslg down
