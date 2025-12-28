@@ -55,16 +55,17 @@ cd ~/my-project
 
 ```bash
 vsc-wslg <action> [profile] [mode]
+vsc-wslg build [mode]
 ```
 
 ### Actions
+- `info` - List available profiles or show profile details
 - `up` - Launch VSCode (foreground, auto-cleanup on exit)
 - `upd` - Launch VSCode (background daemon)
 - `upd-logs` - Launch VSCode (background + follow logs)
-- `build` - Rebuild the Docker image
+- `build` - Rebuild Docker image for specified mode (dind/dood)
 - `down` - Stop container (auto-detects mode)
 - `clean` - Stop container and remove volumes
-- `info` - List available profiles or show profile details
 
 ### Examples
 
@@ -84,8 +85,11 @@ vsc-wslg up rust dood
 # Launch without profile (just workspace + Docker)
 vsc-wslg up
 
-# Rebuild a profile image
-vsc-wslg build python
+# Rebuild DinD image (default)
+vsc-wslg build
+
+# Rebuild DooD image
+vsc-wslg build dood
 
 # Stop running container
 vsc-wslg down
