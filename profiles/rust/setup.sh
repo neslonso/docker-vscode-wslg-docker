@@ -23,6 +23,15 @@ else
     source "$HOME/.cargo/env"
 fi
 
+# Install build tools required for compiling Rust crates
+if ! command -v gcc &> /dev/null; then
+    echo "  → Installing build tools (gcc, g++, make)..."
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq build-essential
+else
+    echo "  ℹ Build tools already installed, skipping..."
+fi
+
 # Install common Rust development tools
 echo "  → Installing cargo tools..."
 
