@@ -32,6 +32,15 @@ else
     echo "  ℹ Build tools already installed, skipping..."
 fi
 
+# Install MinGW-w64 for cross-compilation to Windows
+if ! command -v x86_64-w64-mingw32-gcc &> /dev/null; then
+    echo "  → Installing MinGW-w64 for Windows cross-compilation..."
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq mingw-w64
+else
+    echo "  ℹ MinGW-w64 already installed, skipping..."
+fi
+
 # Install common Rust development tools
 echo "  → Installing cargo tools..."
 
@@ -56,9 +65,12 @@ echo "Installed toolchain:"
 rustc --version
 cargo --version
 echo ""
+echo "Cross-compilation support:"
+echo "  • MinGW-w64 (Windows targets available)"
+echo ""
 echo "Available cargo tools:"
 echo "  • cargo-watch - Auto-rebuild on file changes"
 echo "  • cargo-edit  - Add/remove dependencies (cargo add/rm/upgrade)"
 echo "  • cargo-audit - Security vulnerability scanner"
 echo ""
-echo "Note: Restart your terminal or run 'source \$HOME/.cargo/env' to use Rust"
+echo "Note: For cross-compilation setup, see profile README"
