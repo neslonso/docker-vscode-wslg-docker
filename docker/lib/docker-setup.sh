@@ -26,11 +26,24 @@ start_docker_daemon() {
 
     # Clean stale PID files from previous runs (when container was stopped, not removed)
     if [ -f /var/run/docker.pid ]; then
-        echo "  → Cleaning stale Docker PID file..."
-        sudo rm -f /var/run/docker.pid
+        local pid=$(cat /var/run/docker.pid 2>/dev/null)
+        # Check if process actually exists
+        if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+            echo "  → Cleaning stale Docker PID file (process $pid not running)..."
+            sudo rm -f /var/run/docker.pid
+        elif [ -n "$pid" ]; then
+            echo "  ⚠ Warning: Docker daemon may already be running (PID $pid)"
+        fi
     fi
+
+    # Clean other stale PID files (containerd, etc.)
     if [ -d /var/run/docker ]; then
-        sudo find /var/run/docker -name "*.pid" -delete 2>/dev/null || true
+        sudo find /var/run/docker -name "*.pid" -type f | while read pidfile; do
+            local pid=$(cat "$pidfile" 2>/dev/null)
+            if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+                sudo rm -f "$pidfile"
+            fi
+        done
     fi
 
     sudo dockerd --host=unix:///var/run/docker.sock &
@@ -102,4 +115,50 @@ run_with_docker_perms() {
     else
         "$@"
     fi
+}
+
+##
+# Gracefully shuts down Docker daemon and its containers (DinD mode)
+#
+# This function ensures clean shutdown of the Docker daemon and all
+# containers running inside it. Prevents stale PID files and data
+# corruption when the container is stopped (not removed).
+#
+# Steps:
+# 1. Stop all running containers inside DinD
+# 2. Wait for them to stop
+# 3. Allow dockerd to shutdown cleanly
+#
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   Progress messages to stdout
+# Returns:
+#   0 always
+##
+shutdown_docker_daemon() {
+    echo "🐳 Shutting down Docker daemon..."
+
+    # Check if Docker daemon is running
+    if ! docker info &>/dev/null; then
+        echo "  ℹ Docker daemon not running, skipping cleanup"
+        return 0
+    fi
+
+    # Get list of running containers
+    local containers=$(docker ps -q 2>/dev/null)
+
+    if [ -n "$containers" ]; then
+        echo "  → Stopping $(echo "$containers" | wc -l) running container(s)..."
+        docker stop $containers --time 10 2>/dev/null || true
+    fi
+
+    # Give dockerd a moment to shut down cleanly
+    echo "  → Waiting for daemon shutdown..."
+    sleep 2
+
+    echo "✓ Docker daemon shutdown complete"
+    return 0
 }

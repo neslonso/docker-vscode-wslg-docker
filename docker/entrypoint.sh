@@ -75,3 +75,12 @@ launch_vscode "$@"
 
 # Keep container alive while VSCode runs
 monitor_vscode_process
+
+# ============================================================================
+# Cleanup on exit
+# ============================================================================
+
+# Gracefully shutdown Docker daemon if in DinD mode
+if [ "${ENTRYPOINT_MODE}" = "dind" ]; then
+    shutdown_docker_daemon
+fi
