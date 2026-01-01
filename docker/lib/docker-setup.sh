@@ -23,6 +23,16 @@
 ##
 start_docker_daemon() {
     echo "🐳 Starting Docker daemon..."
+
+    # Clean stale PID files from previous runs (when container was stopped, not removed)
+    if [ -f /var/run/docker.pid ]; then
+        echo "  → Cleaning stale Docker PID file..."
+        sudo rm -f /var/run/docker.pid
+    fi
+    if [ -d /var/run/docker ]; then
+        sudo find /var/run/docker -name "*.pid" -delete 2>/dev/null || true
+    fi
+
     sudo dockerd --host=unix:///var/run/docker.sock &
 
     # Wait for Docker to be ready
