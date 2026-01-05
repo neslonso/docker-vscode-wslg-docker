@@ -189,12 +189,12 @@ show_help() {
 	echo "" >&2
 	echo -e "${white}Actions:${reset}" >&2
 	echo -e "  ${green}info${reset}       List profiles or show profile details" >&2
-	echo -e "  ${green}up${reset}         Launch VSCode (foreground, down on close)" >&2
+	echo -e "  ${green}up${reset}         Launch VSCode (foreground, stop on close - preserves state)" >&2
 	echo -e "  ${green}upd${reset}        Launch VSCode (background)" >&2
 	echo -e "  ${green}upd-logs${reset}   Launch VSCode (background + logs)" >&2
 	echo -e "  ${green}build${reset}      Rebuild Docker image for specified mode" >&2
-	echo -e "  ${green}down${reset}       Stop container (auto-detects mode)" >&2
-	echo -e "  ${green}clean${reset}      Stop container and remove volumes (auto-detects mode)" >&2
+	echo -e "  ${green}down${reset}       Remove container (destroys state)" >&2
+	echo -e "  ${green}clean${reset}      Remove container and volumes (full cleanup)" >&2
 	echo "" >&2
 	echo -e "${white}Modes:${reset}" >&2
 	echo -e "  ${magenta}dind${reset}  → Docker-in-Docker (default)" >&2
@@ -322,10 +322,10 @@ case "$action" in
 	up)
 		# Check if there are other instances running
 		check_running_instances
-		#COMPOSE_PROJECT_NAME="$proj_name" \
-		#PROJECT_DIR="$project_dir" \
+		# Start container in foreground (reuses existing stopped container if present)
 		docker compose $compose_args up
-		docker compose $compose_args down
+		# Stop container but don't remove it (preserves installed tools and state)
+		docker compose $compose_args stop
 		;;
 	upd)
 		# Check if there are other instances running

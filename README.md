@@ -8,7 +8,7 @@ Containerized VSCode with GUI support via WSLg, designed for isolated developmen
 - **Two Docker modes** - Docker-in-Docker (DinD) or Docker-out-of-Docker (DooD)
 - **Profile system** - Pre-configured development environments with customizable tools and extensions
 - **Dynamic workspace mounting** - Project directory mounted at `/<directory-name>`
-- **Persistent state** - Extensions and settings preserved across container restarts
+- **Persistent containers** - Installed tools and state preserved between sessions for fast startup
 - **Single-instance handling** - Automatically detects and manages running instances
 
 ## Requirements
@@ -60,12 +60,12 @@ vsc-wslg build [mode]
 
 ### Actions
 - `info` - List available profiles or show profile details
-- `up` - Launch VSCode (foreground, auto-cleanup on exit)
+- `up` - Launch VSCode (foreground, stops on close - preserves installed tools)
 - `upd` - Launch VSCode (background daemon)
 - `upd-logs` - Launch VSCode (background + follow logs)
 - `build` - Rebuild Docker image for specified mode (dind/dood)
-- `down` - Stop container (auto-detects mode)
-- `clean` - Stop container and remove volumes
+- `down` - Remove container (destroys state - use to reset/update)
+- `clean` - Remove container and volumes (full cleanup)
 
 ### Examples
 
@@ -163,6 +163,25 @@ The script detects running instances and prompts you to:
 - `vscode-extensions` - VSCode extensions
 - `vscode-config` - VSCode settings and state
 - `dind-data` - Docker data (DinD mode only)
+
+### Container Persistence
+
+When you use `up`, the container stops but is **not removed**:
+- ✅ **First launch**: Profile setup installs tools (Rust, Python, etc.) - may take 5-15 minutes
+- ✅ **Subsequent launches**: Container reuses installed tools - starts in ~5-10 seconds
+- ✅ **Preserved**: All installed tools, bash history, terminal state
+- ✅ **Volumes**: Extensions and settings always persist
+
+To **reset/update** the container (removes installed tools):
+```bash
+vsc-wslg down       # Removes container, preserves volumes (extensions/settings)
+vsc-wslg clean      # Removes container + volumes (full reset)
+```
+
+This means:
+- **Daily workflow**: Use `up` repeatedly - fast startup with all tools intact
+- **After updates**: Use `down` then `up` to rebuild container with new image
+- **Fresh start**: Use `clean` to completely reset everything
 
 ### Environment Variables
 - `WORKSPACE_PATH` - Workspace mount point inside container
