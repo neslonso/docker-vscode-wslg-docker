@@ -1,0 +1,69 @@
+# === Base Docker ===
+ms-azuretools.vscode-docker
+ms-vscode-remote.remote-containers
+
+# === GIT ===
+mhutchie.git-graph
+eamodio.gitlens
+
+# === TypeScript/JavaScript Development ===
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+ms-vscode.vscode-typescript-next
+VisualStudioExptTeam.vscodeintellicode
+
+# === Monorepo & Build Tools ===
+# Turborepo support and monorepo utilities
+
+# === Next.js Development ===
+PulkitGangwar.nextjs-snippets
+bradlc.vscode-tailwindcss
+lightyen.tailwindcss-intellisense
+
+# === NestJS Development ===
+imgildev.vscode-nestjs-snippets-extension
+# NestJS specific tooling
+
+# === Database & ORM ===
+Prisma.prisma
+mtxr.sqltools
+mtxr.sqltools-driver-pg
+ckolkman.vscode-postgres
+
+# === Redis ===
+# Redis client and syntax support
+humao.rest-client
+
+# === Testing ===
+Orta.vscode-jest
+firsttris.vscode-jest-runner
+
+# === Code Quality ===
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+usernamehw.errorlens
+streetsidesoftware.code-spell-checker
+
+# === REST API Development ===
+humao.rest-client
+Postman.postman-for-vscode
+
+# === Markdown (documentation) ===
+yzhang.markdown-all-in-one
+
+# === Utilities ===
+editorconfig.editorconfig
+gruntfuggly.todo-tree
+oderwat.indent-rainbow
+aaron-bond.better-comments
+christian-kohler.path-intellisense
+christian-kohler.npm-intellisense
+
+# === Import Management ===
+wix.vscode-import-cost
+formulahendry.auto-rename-tag
+formulahendry.auto-close-tag
+
+# === JSON/YAML Support ===
+redhat.vscode-yaml
+ZainChen.json
