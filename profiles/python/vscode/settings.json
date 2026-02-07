@@ -1,13 +1,7 @@
 {
-  // ========================================
-  // Python Configuration
-  // ========================================
   "python.defaultInterpreterPath": "/usr/bin/python3",
   "python.terminal.activateEnvironment": true,
 
-  // ========================================
-  // Formatting
-  // ========================================
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
@@ -27,26 +21,20 @@
     "--profile=black"
   ],
 
-  // ========================================
-  // Linting
-  // ========================================
   "python.linting.enabled": true,
   "python.linting.lintOnSave": true,
 
-  // Flake8
   "python.linting.flake8Enabled": true,
   "python.linting.flake8Args": [
     "--max-line-length=88",
     "--extend-ignore=E203,W503"
   ],
 
-  // Pylint
   "python.linting.pylintEnabled": true,
   "python.linting.pylintArgs": [
     "--max-line-length=88"
   ],
 
-  // MyPy
   "python.linting.mypyEnabled": true,
   "python.linting.mypyArgs": [
     "--ignore-missing-imports",
@@ -55,9 +43,6 @@
     "--strict"
   ],
 
-  // ========================================
-  // Testing
-  // ========================================
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
   "python.testing.pytestArgs": [
@@ -68,9 +53,6 @@
     "--cov-report=term"
   ],
 
-  // ========================================
-  // IntelliSense & Analysis
-  // ========================================
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
   "python.analysis.completeFunctionParens": true,
@@ -78,25 +60,16 @@
   "python.analysis.inlayHints.functionReturnTypes": true,
   "python.analysis.inlayHints.variableTypes": true,
 
-  // ========================================
-  // Jupyter Notebooks
-  // ========================================
   "jupyter.askForKernelRestart": false,
   "notebook.cellToolbarLocation": {
     "default": "right",
     "jupyter-notebook": "left"
   },
 
-  // ========================================
-  // Editor Settings
-  // ========================================
   "editor.suggestSelection": "first",
   "editor.wordBasedSuggestions": "off",
   "editor.semanticHighlighting.enabled": true,
 
-  // ========================================
-  // File Associations
-  // ========================================
   "files.associations": {
     "*.py": "python",
     "*.pyi": "python",
@@ -106,9 +79,6 @@
     "Pipfile": "toml"
   },
 
-  // ========================================
-  // Files to Exclude
-  // ========================================
   "files.exclude": {
     "**/__pycache__": true,
     "**/*.pyc": true,
@@ -122,15 +92,9 @@
     "**/.tox": true
   },
 
-  // ========================================
-  // Git & Version Control
-  // ========================================
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
 
-  // ========================================
-  // Terminal
-  // ========================================
   "terminal.integrated.defaultProfile.linux": "bash",
   "terminal.integrated.profiles.linux": {
     "bash": {
