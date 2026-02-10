@@ -1,0 +1,54 @@
+# === Base Docker ===
+ms-azuretools.vscode-docker
+ms-vscode-remote.remote-containers
+
+# === GIT ===
+mhutchie.git-graph
+eamodio.gitlens
+
+# === PHP ===
+bmewburn.vscode-intelephense-client
+xdebug.php-debug
+neilbrayfield.php-docblocker
+
+# === Symfony ===
+TheNouillet.symfony-vscode
+
+# === Twig ===
+mblode.twig-language-2
+
+# === PHP Code Quality ===
+junstyle.php-cs-fixer
+recca0120.vscode-phpunit
+
+# === TypeScript/JavaScript ===
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+ms-vscode.vscode-typescript-next
+VisualStudioExptTeam.vscodeintellicode
+
+# === React / Next.js ===
+PulkitGangwar.nextjs-snippets
+formulahendry.auto-rename-tag
+formulahendry.auto-close-tag
+
+# === Configuration (YAML, ENV, JSON) ===
+redhat.vscode-yaml
+mikestead.dotenv
+ZainChen.json
+
+# === REST API Development ===
+humao.rest-client
+
+# === Code Quality & Utilities ===
+usernamehw.errorlens
+streetsidesoftware.code-spell-checker
+gruntfuggly.todo-tree
+aaron-bond.better-comments
+christian-kohler.path-intellisense
+christian-kohler.npm-intellisense
+wix.vscode-import-cost
+editorconfig.editorconfig
+
+# === Markdown ===
+yzhang.markdown-all-in-one
