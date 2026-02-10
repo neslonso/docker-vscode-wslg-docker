@@ -85,6 +85,7 @@ fi
 
 if ! command -v pnpm &> /dev/null; then
     echo "  → Installing pnpm..."
+    export SHELL=/bin/bash
     curl -fsSL https://get.pnpm.io/install.sh | sh -
     export PNPM_HOME="/home/dev/.local/share/pnpm"
     export PATH="$PNPM_HOME:$PATH"
