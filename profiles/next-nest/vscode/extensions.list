@@ -10,7 +10,6 @@ eamodio.gitlens
 dbaeumer.vscode-eslint
 esbenp.prettier-vscode
 ms-vscode.vscode-typescript-next
-VisualStudioExptTeam.vscodeintellicode
 
 # === Monorepo & Build Tools ===
 # Turborepo support and monorepo utilities
@@ -62,7 +61,6 @@ christian-kohler.npm-intellisense
 # === Import Management ===
 wix.vscode-import-cost
 formulahendry.auto-rename-tag
-formulahendry.auto-close-tag
 
 # === JSON/YAML Support ===
 redhat.vscode-yaml

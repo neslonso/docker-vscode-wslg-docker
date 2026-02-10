@@ -25,12 +25,10 @@ recca0120.vscode-phpunit
 dbaeumer.vscode-eslint
 esbenp.prettier-vscode
 ms-vscode.vscode-typescript-next
-VisualStudioExptTeam.vscodeintellicode
 
 # === React / Next.js ===
 PulkitGangwar.nextjs-snippets
 formulahendry.auto-rename-tag
-formulahendry.auto-close-tag
 
 # === Configuration (YAML, ENV, JSON) ===
 redhat.vscode-yaml
