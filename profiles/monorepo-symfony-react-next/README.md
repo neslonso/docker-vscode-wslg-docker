@@ -53,10 +53,8 @@ El script de setup instala automáticamente:
 - **ESLint** (dbaeumer.vscode-eslint)
 - **Prettier** (esbenp.prettier-vscode)
 - **TypeScript Next** (ms-vscode.vscode-typescript-next)
-- **IntelliCode** (VisualStudioExptTeam.vscodeintellicode)
 - **Next.js Snippets** (PulkitGangwar.nextjs-snippets)
 - **Auto Rename Tag** (formulahendry.auto-rename-tag)
-- **Auto Close Tag** (formulahendry.auto-close-tag)
 
 ### Configuración y utilidades
 - **YAML** (redhat.vscode-yaml)
