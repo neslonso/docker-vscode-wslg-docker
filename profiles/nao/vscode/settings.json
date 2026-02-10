@@ -1,0 +1,194 @@
+{
+  // ========================================
+  // PHP Configuration (apps/api)
+  // ========================================
+  "php.validate.enable": true,
+  "php.validate.run": "onType",
+  "php.suggest.basic": false,
+  "intelephense.environment.phpVersion": "8.2.0",
+  "intelephense.files.maxSize": 3000000,
+
+  "[php]": {
+    "editor.defaultFormatter": "junstyle.php-cs-fixer",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4
+  },
+
+  "php-cs-fixer.executablePath": "${extensionPath}/php-cs-fixer.phar",
+  "php-cs-fixer.onsave": true,
+  "php-cs-fixer.rules": "@Symfony",
+  "phpunit.command": "apps/api/vendor/bin/phpunit",
+
+  // ========================================
+  // Twig Templates (apps/api/templates)
+  // ========================================
+  "[twig]": {
+    "editor.tabSize": 4
+  },
+
+  // ========================================
+  // TypeScript/JavaScript (apps/web, apps/showcase, packages/*)
+  // ========================================
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.tabSize": 2
+  },
+
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.tabSize": 2
+  },
+
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.tabSize": 2
+  },
+
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.tabSize": 2
+  },
+
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.tabSize": 2
+  },
+
+  // ========================================
+  // ESLint
+  // ========================================
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+
+  // ========================================
+  // Editor Settings
+  // ========================================
+  "editor.suggestSelection": "first",
+  "editor.semanticHighlighting.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.linkedEditing": true,
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+
+  // ========================================
+  // File Associations
+  // ========================================
+  "files.associations": {
+    "*.twig": "twig",
+    "*.html.twig": "twig",
+    "*.ts": "typescript",
+    "*.tsx": "typescriptreact",
+    ".env*": "properties"
+  },
+
+  // ========================================
+  // Files to Exclude
+  // ========================================
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.turbo": true,
+    "**/vendor": true
+  },
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.turbo": true,
+    "**/vendor": true,
+    "**/pnpm-lock.yaml": true,
+    "**/composer.lock": true,
+    "**/symfony.lock": true
+  },
+
+  // ========================================
+  // Git & Version Control
+  // ========================================
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+
+  // ========================================
+  // Terminal
+  // ========================================
+  "terminal.integrated.defaultProfile.linux": "bash",
+
+  // ========================================
+  // NPM & Package Management
+  // ========================================
+  "npm.packageManager": "pnpm",
+  "npm.enableRunFromFolder": true,
+
+  // ========================================
+  // Error Lens
+  // ========================================
+  "errorLens.enabledDiagnosticLevels": [
+    "error",
+    "warning"
+  ],
+
+  // ========================================
+  // Todo Tree
+  // ========================================
+  "todo-tree.general.tags": [
+    "TODO",
+    "FIXME",
+    "NOTE",
+    "HACK"
+  ]
+}
