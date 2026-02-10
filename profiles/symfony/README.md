@@ -2,104 +2,63 @@
 
 Entorno completo para desarrollo PHP con Symfony Framework.
 
-## Características
+## Herramientas instaladas
 
-### Infraestructura (servicios separados)
-- **PHP 8.2-fpm**: PHP con Composer, Symfony CLI y extensiones necesarias
-- **MySQL 8.0**: Base de datos principal
-- **Redis 7**: Cache y gestor de sesiones
+El script de setup instala automáticamente:
 
-### Extensiones de VSCode
+- **PHP 8.2 CLI** con extensiones: xml, mbstring, curl, zip, intl
+- **Composer** - Gestor de dependencias PHP
+- **Symfony CLI** - Herramienta oficial de línea de comandos de Symfony
+
+## Extensiones de VSCode
+
+### PHP
 - **PHP IntelliSense** (bmewburn.vscode-intelephense-client)
 - **PHP Debug** (xdebug.php-debug)
 - **PHP DocBlocker** (neilbrayfield.php-docblocker)
+- **PHP CS Fixer** (junstyle.php-cs-fixer)
+- **PHPUnit** (recca0120.vscode-phpunit)
+
+### Symfony / Twig
 - **Symfony Support** (TheNouillet.symfony-vscode)
 - **Twig Language** (mblode.twig-language-2)
+
+### Configuración y utilidades
 - **YAML Support** (redhat.vscode-yaml)
-- **PHPUnit** (recca0120.vscode-phpunit)
-- **PHP CS Fixer** (junstyle.php-cs-fixer)
+- **DotENV** (mikestead.dotenv)
+- **XML Tools** (DotJoshJohnson.xml)
 - **Git Graph** (mhutchie.git-graph) - Visualización de historial
 - **Docker** (ms-azuretools.vscode-docker)
+- **Remote Containers** (ms-vscode-remote.remote-containers)
 
 ### Configuraciones VSCode
 - Format on save activado con PHP CS Fixer (@Symfony rules)
 - IntelliSense optimizado para PHP 8.2
 - Asociaciones de archivos para Twig
-- PHPUnit integrado
+- PHPUnit integrado (`vendor/bin/phpunit`)
 
 ## Uso
 
 ### 1. Levantar VSCode
 ```bash
-./vsc-wslg dood up symfony
+./vsc-wslg up symfony
 ```
 
-### 2. Levantar infraestructura (desde VSCode)
-```bash
-# Desde el terminal integrado de VSCode
-~/vsc-wslg-symfony-profile/manage start
-```
-
-### 3. Configurar proyecto Symfony
-```bash
-# Instalar dependencias
-composer install
-
-# Configurar .env
-DATABASE_URL=mysql://symfony:secret@mysql:3306/symfony_db
-REDIS_URL=redis://redis:6379
-
-# Ejecutar migraciones
-bin/console doctrine:migrations:migrate
-```
-
-## Gestión de infraestructura
-
-```bash
-# Levantar servicios
-~/vsc-wslg-symfony-profile/manage start
-
-# Detener servicios
-~/vsc-wslg-symfony-profile/manage stop
-
-# Reiniciar servicios
-~/vsc-wslg-symfony-profile/manage restart
-
-# Ver logs
-~/vsc-wslg-symfony-profile/manage logs
-
-# Ver estado
-~/vsc-wslg-symfony-profile/manage status
-```
-
-## Crear un proyecto nuevo
-
+### 2. Crear un proyecto nuevo
 ```bash
 # Con Symfony CLI
 symfony new mi-proyecto --webapp
 
 # O con Composer
-composer create-project symfony/skeleton:"6.4.*" mi-proyecto
+composer create-project symfony/skeleton:"7.2.*" mi-proyecto
 cd mi-proyecto
 composer require webapp
 ```
 
-## Conexión a servicios
-
-### MySQL
-```
-Host: mysql (o localhost desde el host)
-Port: 3306
-Database: symfony_db
-User: symfony
-Password: secret
-Root password: root
-```
-
-### Redis
-```
-Host: redis (o localhost desde el host)
-Port: 6379
+### 3. Servidor de desarrollo
+```bash
+# Desde el directorio del proyecto
+symfony serve
 ```
 
 ## Comandos útiles
@@ -114,8 +73,9 @@ composer update
 bin/console doctrine:database:create
 bin/console doctrine:migrations:migrate
 bin/console cache:clear
+bin/console make:controller
 
-# Servidor de desarrollo (alternativo)
+# Servidor de desarrollo
 symfony serve
 
 # Tests
