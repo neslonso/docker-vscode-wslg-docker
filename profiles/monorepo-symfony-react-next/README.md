@@ -1,37 +1,38 @@
-# Perfil nao
+# Perfil monorepo-symfony-react-next
 
-Entorno completo para el monorepo nao.info: API PHP/Symfony + frontends TypeScript/React/Next.js con Turborepo y pnpm.
+Entorno completo para monorepos full-stack que combinan un backend PHP/Symfony con frontends TypeScript/React y Next.js, orquestados con pnpm workspaces y Turborepo.
 
-## Arquitectura del proyecto
+## Stack soportado
+
+Este perfil está pensado para proyectos con una estructura tipo:
 
 ```
-nao.info/
+mi-proyecto/
 ├── apps/
-│   ├── api/           # PHP/Symfony - Backend API + Laboratory UI (Twig)
-│   ├── web/           # React + TypeScript + Vite - SPA principal
-│   └── showcase/      # Next.js + TypeScript - App Router
+│   ├── api/           # PHP/Symfony - Backend API (Twig, Doctrine, etc.)
+│   ├── web/           # React + TypeScript - SPA (Vite, CRA, etc.)
+│   └── landing/       # Next.js + TypeScript - SSR/SSG (App Router)
 ├── packages/
 │   ├── types/         # Tipos TypeScript compartidos
-│   ├── api-client/    # Cliente API TypeScript
-│   └── ui/            # Componentes React compartidos
-├── infra/
-│   ├── docker/        # Dockerfiles (api, web, showcase)
-│   └── nginx/         # Configuración Nginx
+│   ├── ui/            # Componentes React compartidos
+│   └── ...            # Otros paquetes compartidos
 ├── turbo.json
 ├── pnpm-workspace.yaml
-└── Makefile
+└── package.json
 ```
+
+La estructura exacta de directorios puede variar. Lo relevante es el combo de tecnologías.
 
 ## Herramientas instaladas
 
 El script de setup instala automáticamente:
 
-### PHP (para apps/api)
+### PHP (backend Symfony)
 - **PHP 8.2 CLI** con extensiones: xml, mbstring, curl, zip, intl
 - **Composer** - Gestor de dependencias PHP
 - **Symfony CLI** - Herramienta oficial de Symfony
 
-### Node.js (para apps/web, apps/showcase, packages/*)
+### Node.js (frontends + paquetes compartidos)
 - **Node.js 20.x LTS** - Runtime JavaScript
 - **pnpm** - Gestor de paquetes (optimizado para monorepos)
 - **Turborepo** - Sistema de build para monorepos
@@ -80,7 +81,7 @@ El script de setup instala automáticamente:
 
 ### 1. Levantar VSCode
 ```bash
-./vsc-wslg up nao
+./vsc-wslg up monorepo-symfony-react-next
 ```
 
 ### 2. Instalar dependencias
@@ -88,7 +89,7 @@ El script de setup instala automáticamente:
 # Dependencias Node.js (monorepo completo)
 pnpm install
 
-# Dependencias PHP (apps/api)
+# Dependencias PHP (app Symfony)
 cd apps/api && composer install
 ```
 
@@ -98,15 +99,12 @@ cd apps/api && composer install
 pnpm dev
 
 # O arrancar apps individuales
-pnpm --filter web dev         # React + Vite SPA
-pnpm --filter showcase dev    # Next.js
-cd apps/api && symfony serve   # Symfony API
+pnpm --filter web dev        # React SPA
+pnpm --filter landing dev    # Next.js
+cd apps/api && symfony serve  # Symfony API
 
 # Build completo
 pnpm build
-
-# Infraestructura Docker (producción)
-make up
 ```
 
 ## Comandos útiles
@@ -117,15 +115,16 @@ pnpm install                   # Instalar todas las dependencias
 pnpm dev                       # Dev servers (todas las apps)
 pnpm build                     # Build completo
 pnpm --filter <app> dev        # Dev server de una app concreta
+turbo run build --force         # Build sin caché
 
-# === PHP / Symfony (apps/api) ===
-cd apps/api
+# === PHP / Symfony ===
 composer install               # Instalar dependencias PHP
 symfony serve                  # Servidor de desarrollo
 bin/console cache:clear        # Limpiar caché Symfony
+bin/console make:controller    # Generar controlador
+php bin/phpunit                # Tests
 
-# === Makefile (infra) ===
-make up                        # Docker compose up
-make down                      # Docker compose down
-make build                     # Build imágenes Docker
+# === Paquetes compartidos ===
+pnpm --filter @myorg/ui dev    # Desarrollo de un paquete
+pnpm --filter @myorg/types build
 ```

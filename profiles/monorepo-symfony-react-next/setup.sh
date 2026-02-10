@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================================================
-# nao Profile - System Setup Script
+# Monorepo Symfony + React + Next.js - System Setup Script
 # ============================================================================
 # Full-stack monorepo environment: PHP/Symfony (API) + TypeScript/React/Next.js
-# (frontends) with pnpm + Turborepo orchestration.
+# (frontends) with pnpm workspaces + Turborepo orchestration.
 # It runs once per profile (tracked by flag file).
 #
 # To re-run: docker compose down -v (removes volumes with flag)
@@ -13,13 +13,13 @@ set -e
 # Ensure noninteractive frontend for apt (sudo resets environment)
 export DEBIAN_FRONTEND=noninteractive
 
-echo "📦 Installing nao.info development environment..."
+echo "📦 Installing monorepo Symfony + React + Next.js environment..."
 
 # Update package lists
 sudo apt-get update -qq
 
 # ============================================================================
-# PHP + Extensions (for apps/api - Symfony)
+# PHP + Extensions (Symfony backend)
 # ============================================================================
 
 echo "  → Installing PHP and extensions..."
@@ -68,7 +68,7 @@ else
 fi
 
 # ============================================================================
-# Node.js 20.x LTS (for apps/web, apps/showcase, packages/*)
+# Node.js 20.x LTS (React/Next.js frontends + shared packages)
 # ============================================================================
 
 if ! command -v node &> /dev/null; then
@@ -117,7 +117,7 @@ sudo apt-get install -y -qq \
 sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 
-echo "✅ nao.info environment set up successfully!"
+echo "✅ Monorepo Symfony + React + Next.js environment set up successfully!"
 echo ""
 echo "Installed tools:"
 php --version | head -1

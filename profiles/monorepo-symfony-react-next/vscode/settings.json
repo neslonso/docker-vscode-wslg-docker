@@ -1,6 +1,6 @@
 {
   // ========================================
-  // PHP Configuration (apps/api)
+  // PHP Configuration (Symfony backend)
   // ========================================
   "php.validate.enable": true,
   "php.validate.run": "onType",
@@ -17,17 +17,17 @@
   "php-cs-fixer.executablePath": "${extensionPath}/php-cs-fixer.phar",
   "php-cs-fixer.onsave": true,
   "php-cs-fixer.rules": "@Symfony",
-  "phpunit.command": "apps/api/vendor/bin/phpunit",
+  "phpunit.command": "vendor/bin/phpunit",
 
   // ========================================
-  // Twig Templates (apps/api/templates)
+  // Twig Templates
   // ========================================
   "[twig]": {
     "editor.tabSize": 4
   },
 
   // ========================================
-  // TypeScript/JavaScript (apps/web, apps/showcase, packages/*)
+  // TypeScript/JavaScript (React/Next.js frontends + packages)
   // ========================================
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
