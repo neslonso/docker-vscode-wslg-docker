@@ -9,12 +9,15 @@
 
 set -e
 
+# Ensure noninteractive frontend for apt (sudo resets environment)
+export DEBIAN_FRONTEND=noninteractive
+
 echo "📦 Installing PHP development tools..."
 
 # Install required PHP extensions for Symfony
 echo "  → Installing PHP extensions..."
-sudo apt-get update -qq
-sudo apt-get install -y -qq \
+sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     php-cli \
     php-xml \
     php-mbstring \
@@ -26,18 +29,20 @@ sudo apt-get install -y -qq \
 # Install Composer globally
 if ! command -v composer &> /dev/null; then
     echo "  → Installing Composer..."
+    # Use /tmp as working directory (cwd may not be writable, e.g. /)
+    cd /tmp
     EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
     ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
 
     if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
         echo "ERROR: Invalid Composer installer checksum"
-        rm composer-setup.php
+        rm -f composer-setup.php
         exit 1
     fi
 
     sudo php composer-setup.php --quiet --install-dir=/usr/local/bin --filename=composer
-    rm composer-setup.php
+    rm -f composer-setup.php
 else
     echo "  ℹ Composer already installed, skipping..."
 fi
