@@ -79,8 +79,14 @@ El script de setup instala automáticamente:
 
 ### 1. Levantar VSCode
 ```bash
+# Desde el directorio de tu proyecto
 ./vsc-wslg up monorepo-symfony-react-next
+
+# Con modo Docker-out-of-Docker (usa el Docker del host)
+./vsc-wslg up monorepo-symfony-react-next dood
 ```
+
+El modo por defecto es `dind` (Docker-in-Docker, Docker aislado dentro del contenedor).
 
 ### 2. Instalar dependencias
 ```bash
@@ -103,6 +109,42 @@ cd apps/api && symfony serve  # Symfony API
 
 # Build completo
 pnpm build
+```
+
+## Gestión del contenedor
+
+```bash
+# === Ciclo de vida ===
+./vsc-wslg up monorepo-symfony-react-next       # Levantar (foreground, se para al cerrar VSCode)
+./vsc-wslg upd monorepo-symfony-react-next      # Levantar en background
+./vsc-wslg upd-logs monorepo-symfony-react-next # Levantar en background + ver logs
+./vsc-wslg down                                  # Parar y eliminar contenedor (mantiene volúmenes)
+./vsc-wslg clean                                 # Parar, eliminar contenedor Y volúmenes (reset completo)
+
+# === Reconstruir imagen ===
+./vsc-wslg build                                 # Rebuild imagen (modo dind por defecto)
+./vsc-wslg build dood                            # Rebuild imagen modo dood
+
+# === Información ===
+./vsc-wslg info                                  # Listar perfiles disponibles
+./vsc-wslg info monorepo-symfony-react-next      # Ver este README
+```
+
+### Persistencia de datos
+
+El contenedor usa dos volúmenes Docker para persistir datos entre reinicios:
+- **vscode-extensions** - Extensiones instaladas (`~/.vscode`)
+- **vscode-config** - Configuración de VSCode (`~/.config/Code`)
+
+Al usar `down`, los volúmenes se mantienen (las extensiones y configuración sobreviven).
+Al usar `clean`, los volúmenes se eliminan y el setup se ejecutará de nuevo al levantar.
+
+### Re-ejecutar el setup
+
+Si necesitas forzar la re-ejecución del script de setup (por ejemplo, tras actualizar el perfil):
+```bash
+./vsc-wslg clean
+./vsc-wslg up monorepo-symfony-react-next
 ```
 
 ## Comandos útiles
