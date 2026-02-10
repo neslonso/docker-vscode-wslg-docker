@@ -69,7 +69,7 @@ sudo apt-get install -y -qq \
 # ============================================================================
 
 echo "  → Installing global Node.js development tools..."
-npm install -g --silent \
+sudo npm install -g --silent \
     typescript \
     ts-node \
     tsx \

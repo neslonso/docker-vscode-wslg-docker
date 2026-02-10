@@ -29,6 +29,7 @@ COLOR_RESET='\033[0m'
 ##
 setup_vscode_permissions() {
     sudo chown -R dev:dev /home/dev/.vscode 2>/dev/null || true
+    sudo chown dev:dev /home/dev/.config 2>/dev/null || true
     sudo chown -R dev:dev /home/dev/.config/Code 2>/dev/null || true
 }
 

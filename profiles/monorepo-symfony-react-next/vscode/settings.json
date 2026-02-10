@@ -1,7 +1,4 @@
 {
-  // ========================================
-  // PHP Configuration (Symfony backend)
-  // ========================================
   "php.validate.enable": true,
   "php.validate.run": "onType",
   "php.suggest.basic": false,
@@ -19,16 +16,10 @@
   "php-cs-fixer.rules": "@Symfony",
   "phpunit.command": "vendor/bin/phpunit",
 
-  // ========================================
-  // Twig Templates
-  // ========================================
   "[twig]": {
     "editor.tabSize": 4
   },
 
-  // ========================================
-  // TypeScript/JavaScript (React/Next.js frontends + packages)
-  // ========================================
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "typescript.updateImportsOnFileMove.enabled": "always",
@@ -91,9 +82,6 @@
     "editor.tabSize": 2
   },
 
-  // ========================================
-  // ESLint
-  // ========================================
   "eslint.enable": true,
   "eslint.validate": [
     "javascript",
@@ -107,9 +95,6 @@
     }
   ],
 
-  // ========================================
-  // Editor Settings
-  // ========================================
   "editor.suggestSelection": "first",
   "editor.semanticHighlighting.enabled": true,
   "editor.bracketPairColorization.enabled": true,
@@ -119,9 +104,6 @@
     "strings": true
   },
 
-  // ========================================
-  // File Associations
-  // ========================================
   "files.associations": {
     "*.twig": "twig",
     "*.html.twig": "twig",
@@ -130,9 +112,6 @@
     ".env*": "properties"
   },
 
-  // ========================================
-  // Files to Exclude
-  // ========================================
   "files.exclude": {
     "**/.git": true,
     "**/.DS_Store": true,
@@ -156,35 +135,20 @@
     "**/symfony.lock": true
   },
 
-  // ========================================
-  // Git & Version Control
-  // ========================================
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
   "git.autofetch": true,
 
-  // ========================================
-  // Terminal
-  // ========================================
   "terminal.integrated.defaultProfile.linux": "bash",
 
-  // ========================================
-  // NPM & Package Management
-  // ========================================
   "npm.packageManager": "pnpm",
   "npm.enableRunFromFolder": true,
 
-  // ========================================
-  // Error Lens
-  // ========================================
   "errorLens.enabledDiagnosticLevels": [
     "error",
     "warning"
   ],
 
-  // ========================================
-  // Todo Tree
-  // ========================================
   "todo-tree.general.tags": [
     "TODO",
     "FIXME",
