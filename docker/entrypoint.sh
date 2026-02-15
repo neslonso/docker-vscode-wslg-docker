@@ -21,6 +21,23 @@ source /usr/local/lib/docker-setup.sh
 source /usr/local/lib/vscode-setup.sh
 
 # ============================================================================
+# Signal handling for clean shutdown
+# ============================================================================
+# When container receives SIGTERM (docker stop / docker compose stop), ensure
+# Docker daemon is shut down cleanly before exiting (DinD mode only).
+
+cleanup_and_exit() {
+    echo ""
+    echo "⚡ Signal received, shutting down..."
+    if [ "${ENTRYPOINT_MODE}" = "dind" ]; then
+        shutdown_docker_daemon
+    fi
+    exit 0
+}
+
+trap cleanup_and_exit SIGTERM SIGINT
+
+# ============================================================================
 # Initial setup
 # ============================================================================
 
