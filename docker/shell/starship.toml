@@ -1,128 +1,185 @@
-# Starship prompt - Pastel Powerline (multi-line)
+# Starship prompt — Pastel Powerline (multi-line)
 #
-# Line 1: user  host  directory  git  languages
-# Line 2: time  duration  prompt char
+# Line 1:  user   host   ~/workspaces/proj   main ✚   v20 ...
+# Line 2:  16/02 21:30  ❯
+#
+# Requires a Nerd Font (FiraCode NF is installed in the image)
 
-format = """\
-[](fg:#7aa2f7)\
+format = """
+[](color_purple)\
+$os\
 $username\
-[](fg:#7aa2f7 bg:#e0af68)\
+[](fg:color_purple bg:color_rose)\
 $hostname\
-[](fg:#e0af68 bg:#9ece6a)\
+[](fg:color_rose bg:color_green)\
 $directory\
-[](fg:#9ece6a bg:#bb9af7)\
+[](fg:color_green bg:color_lavender)\
 $git_branch\
 $git_status\
-[](fg:#bb9af7 bg:#7dcfff)\
+[](fg:color_lavender bg:color_sky)\
+$c\
 $python\
 $nodejs\
 $php\
 $rust\
 $java\
 $golang\
+$kotlin\
+[](fg:color_sky bg:color_teal)\
 $docker_context\
-[](fg:#7dcfff)\
+[](fg:color_teal)\
 $fill\
 $cmd_duration\
 $line_break\
-[](fg:#565f89)\
+[](fg:color_muted)\
 $time\
-[](fg:#565f89)\
+[](fg:color_muted) \
 $character"""
 
+# ─── Palette ─────────────────────────────────────────────────────
+
+palette = "pastel"
+
+[palettes.pastel]
+color_fg      = "#1e1e2e"     # dark text on colored bg
+color_fg_soft = "#cdd6f4"     # light text on dark bg
+color_purple  = "#cba6f7"     # mauve  — user
+color_rose    = "#f5a97f"     # peach  — host
+color_green   = "#a6e3a1"     # green  — directory
+color_lavender= "#b4befe"     # lavender — git
+color_sky     = "#89dceb"     # sky    — languages
+color_teal    = "#94e2d5"     # teal   — docker
+color_muted   = "#585b70"     # surface2 — time bg
+color_ok      = "#a6e3a1"     # green  — success char
+color_err     = "#f38ba8"     # red    — error char
+color_warn    = "#f9e2af"     # yellow — vim replace
+
 # ─── Line 1 segments ─────────────────────────────────────────────
+
+[os]
+disabled = false
+style = "fg:color_fg bg:color_purple bold"
+
+[os.symbols]
+Debian = "󰣚 "
+Linux  = "󰌽 "
+Ubuntu = "󰕈 "
+Arch   = "󰣇 "
+Windows = "󰍲 "
+Macos  = "󰀵 "
 
 [username]
 show_always = true
 format = "[ $user ]($style)"
-style_user = "fg:#1a1b26 bg:#7aa2f7 bold"
-style_root = "fg:#1a1b26 bg:#f7768e bold"
+style_user = "fg:color_fg bg:color_purple bold"
+style_root = "fg:color_fg bg:color_err bold"
 
 [hostname]
 ssh_only = false
-format = "[ $hostname ]($style)"
-style = "fg:#1a1b26 bg:#e0af68 bold"
+format = "[  $hostname ]($style)"
+style = "fg:color_fg bg:color_rose bold"
 
 [directory]
 format = "[ $path ]($style)"
-style = "fg:#1a1b26 bg:#9ece6a bold"
-truncation_length = 3
+style = "fg:color_fg bg:color_green bold"
+truncation_length = 4
 truncation_symbol = "…/"
+read_only = " 󰌾"
+
+[directory.substitutions]
+# Order matters — longer/more specific first
+"/workspaces" = " "
+"Documents" = "󰈙 "
+"Downloads" = " "
+"~" = " "
 
 [git_branch]
-format = "[ $symbol$branch ]($style)"
-symbol = " "
-style = "fg:#1a1b26 bg:#bb9af7 bold"
+symbol = ""
+format = "[ $symbol $branch ]($style)"
+style = "fg:color_fg bg:color_lavender bold"
 
 [git_status]
-format = "[$all_status$ahead_behind ]($style)"
-style = "fg:#1a1b26 bg:#bb9af7"
-conflicted = " "
-ahead = "⇡${count} "
-behind = "⇣${count} "
-diverged = "⇕⇡${ahead_count}⇣${behind_count} "
-untracked = "? "
-stashed = "📦 "
-modified = "! "
-staged = "+ "
-renamed = "» "
-deleted = "✘ "
+format = "[($all_status$ahead_behind )]($style)"
+style = "fg:color_fg bg:color_lavender"
+conflicted = "  "
+ahead     = " ⇡${count}"
+behind    = " ⇣${count}"
+diverged  = " ⇕⇡${ahead_count}⇣${behind_count}"
+untracked = " ?"
+stashed   = " 󰏗"
+modified  = " !"
+staged    = " +"
+renamed   = " »"
+deleted   = " ✘"
+
+[c]
+symbol = " "
+format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
+style = "bg:color_sky"
 
 [python]
-format = "[ $symbol$version ]($style)"
 symbol = " "
-style = "fg:#1a1b26 bg:#7dcfff"
+format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
+style = "bg:color_sky"
 
 [nodejs]
-format = "[ $symbol$version ]($style)"
 symbol = " "
-style = "fg:#1a1b26 bg:#7dcfff"
+format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
+style = "bg:color_sky"
 
 [php]
-format = "[ $symbol$version ]($style)"
 symbol = " "
-style = "fg:#1a1b26 bg:#7dcfff"
+format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
+style = "bg:color_sky"
 
 [rust]
-format = "[ $symbol$version ]($style)"
 symbol = " "
-style = "fg:#1a1b26 bg:#7dcfff"
+format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
+style = "bg:color_sky"
 
 [java]
-format = "[ $symbol$version ]($style)"
 symbol = " "
-style = "fg:#1a1b26 bg:#7dcfff"
+format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
+style = "bg:color_sky"
 
 [golang]
-format = "[ $symbol$version ]($style)"
 symbol = " "
-style = "fg:#1a1b26 bg:#7dcfff"
+format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
+style = "bg:color_sky"
+
+[kotlin]
+symbol = " "
+format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
+style = "bg:color_sky"
 
 [docker_context]
-format = "[ $symbol$context ]($style)"
 symbol = " "
-style = "fg:#1a1b26 bg:#7dcfff"
+format = '[[ $symbol$context ](fg:color_fg bg:color_teal)]($style)'
+style = "bg:color_teal"
 
-# ─── Fill (spaces between left and right) ─────────────────────────
+# ─── Fill ─────────────────────────────────────────────────────────
 
 [fill]
 symbol = " "
 
-# ─── Right-aligned / Line 1 tail ─────────────────────────────────
+# ─── Right side of line 1 ────────────────────────────────────────
 
 [cmd_duration]
 min_time = 2_000
-format = " [took $duration]($style)"
-style = "fg:#565f89 italic"
+format = "  [󱎫 $duration]($style)"
+style = "fg:color_muted italic"
 
 # ─── Line 2 ──────────────────────────────────────────────────────
 
 [time]
 disabled = false
-format = "[ $time ]($style)"
+format = "[  $time ]($style)"
 time_format = "%d/%m %H:%M:%S"
-style = "fg:#a9b1d6 bg:#565f89"
+style = "fg:color_fg_soft bg:color_muted"
 
 [character]
-success_symbol = " [❯](fg:#9ece6a bold)"
-error_symbol = " [❯](fg:#f7768e bold)"
+success_symbol = "[❯](fg:color_ok bold)"
+error_symbol = "[❯](fg:color_err bold)"
+vimcmd_symbol = "[❮](fg:color_ok bold)"
+vimcmd_replace_one_symbol = "[❮](fg:color_warn bold)"
+vimcmd_replace_symbol = "[❮](fg:color_warn bold)"
