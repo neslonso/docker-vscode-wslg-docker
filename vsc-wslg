@@ -258,8 +258,8 @@ fi
 
 # For down/clean actions, auto-detect mode from running container
 if [ "$action" = "down" ] || [ "$action" = "clean" ]; then
-	# Try to detect mode from running container
-	running_container=$(docker ps --filter "name=${proj_name}" --format "{{.Names}}" 2>/dev/null | head -1)
+	# Try to detect mode from container (running or stopped)
+	running_container=$(docker ps -a --filter "name=${proj_name}" --format "{{.Names}}" 2>/dev/null | head -1)
 
 	if [ -n "$running_container" ]; then
 		image_name=$(docker inspect "$running_container" --format='{{.Config.Image}}' 2>/dev/null)
