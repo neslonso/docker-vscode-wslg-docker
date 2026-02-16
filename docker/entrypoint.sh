@@ -46,6 +46,7 @@ trap cleanup_and_exit SIGTERM SIGINT
 
 setup_shell_persistence() {
     local persist_dir="/home/dev/.shell_persist"
+    sudo chown dev:dev "$persist_dir" 2>/dev/null || true
     mkdir -p "$persist_dir"
 
     # Home-level dotfiles
