@@ -513,8 +513,8 @@ prepare_readme_open() {
 launch_vscode() {
     echo "🚀 Starting VSCode GUI..."
 
-    # Use WORKSPACE_PATH if set, otherwise default to /workspace for backward compatibility
-    local workspace_path="${WORKSPACE_PATH:-/workspace}"
+    # Use WORKSPACE_PATH if set, otherwise default to /workspaces
+    local workspace_path="${WORKSPACE_PATH:-/workspaces}"
     local vscode_cmd="code --new-window --no-sandbox $workspace_path"
     echo "🔍 DEBUG: VSCode command: $vscode_cmd"
     echo "🔍 DEBUG: Workspace path: $workspace_path"
