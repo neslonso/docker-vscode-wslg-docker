@@ -1,87 +1,104 @@
-# Starship prompt — Pastel Powerline (multi-line)
+# Starship prompt — Gruvbox Rainbow (customized, multi-line)
 #
-# Line 1:  user   host   ~/workspaces/proj   main ✚   v20 ...
-# Line 2:  16/02 21:30  ❯
+# Based on the official Gruvbox Rainbow preset with:
+#   - Hostname segment (always visible)
+#   - Directory substitutions:  home,  /workspaces
+#   - Time format dd/mm HH:MM:SS
 #
 # Requires a Nerd Font (FiraCode NF is installed in the image)
 
+"$schema" = 'https://starship.rs/config-schema.json'
+
 format = """
-[](color_purple)\
+[](color_orange)\
 $os\
 $username\
-[](fg:color_purple bg:color_rose)\
+[](bg:color_peach fg:color_orange)\
 $hostname\
-[](fg:color_rose bg:color_green)\
+[](bg:color_yellow fg:color_peach)\
 $directory\
-[](fg:color_green bg:color_lavender)\
+[](fg:color_yellow bg:color_aqua)\
 $git_branch\
 $git_status\
-[](fg:color_lavender bg:color_sky)\
+[](fg:color_aqua bg:color_blue)\
 $c\
-$python\
+$cpp\
+$rust\
+$golang\
 $nodejs\
 $php\
-$rust\
 $java\
-$golang\
 $kotlin\
-[](fg:color_sky bg:color_teal)\
+$haskell\
+$python\
+[](fg:color_blue bg:color_bg3)\
 $docker_context\
-[](fg:color_teal)\
-$fill\
-$cmd_duration\
-$line_break\
-[](fg:color_muted)\
+$conda\
+$pixi\
+[](fg:color_bg3 bg:color_bg1)\
 $time\
-[](fg:color_muted) \
-$character"""
+[ ](fg:color_bg1)\
+$line_break$character"""
 
-# ─── Palette ─────────────────────────────────────────────────────
+palette = 'gruvbox_dark'
 
-palette = "pastel"
-
-[palettes.pastel]
-color_fg      = "#1e1e2e"     # dark text on colored bg
-color_fg_soft = "#cdd6f4"     # light text on dark bg
-color_purple  = "#cba6f7"     # mauve  — user
-color_rose    = "#f5a97f"     # peach  — host
-color_green   = "#a6e3a1"     # green  — directory
-color_lavender= "#b4befe"     # lavender — git
-color_sky     = "#89dceb"     # sky    — languages
-color_teal    = "#94e2d5"     # teal   — docker
-color_muted   = "#585b70"     # surface2 — time bg
-color_ok      = "#a6e3a1"     # green  — success char
-color_err     = "#f38ba8"     # red    — error char
-color_warn    = "#f9e2af"     # yellow — vim replace
+[palettes.gruvbox_dark]
+color_fg0    = '#fbf1c7'
+color_bg1    = '#3c3836'
+color_bg3    = '#665c54'
+color_blue   = '#458588'
+color_aqua   = '#689d6a'
+color_green  = '#98971a'
+color_orange = '#d65d0e'
+color_peach  = '#fe8019'
+color_purple = '#b16286'
+color_red    = '#cc241d'
+color_yellow = '#d79921'
 
 # ─── Line 1 segments ─────────────────────────────────────────────
 
 [os]
 disabled = false
-style = "fg:color_fg bg:color_purple bold"
+style = "bg:color_orange fg:color_fg0"
 
 [os.symbols]
-Debian = "󰣚 "
-Linux  = "󰌽 "
-Ubuntu = "󰕈 "
-Arch   = "󰣇 "
-Windows = "󰍲 "
-Macos  = "󰀵 "
+Windows = "󰍲"
+Ubuntu = "󰕈"
+SUSE = ""
+Raspbian = "󰐿"
+Mint = "󰣭"
+Macos = "󰀵"
+Manjaro = ""
+Linux = "󰌽"
+Gentoo = "󰣨"
+Fedora = "󰣛"
+Alpine = ""
+Amazon = ""
+Android = ""
+AOSC = ""
+Arch = "󰣇"
+Artix = "󰣇"
+EndeavourOS = ""
+CentOS = ""
+Debian = "󰣚"
+Redhat = "󱄛"
+RedHatEnterprise = "󱄛"
+Pop = ""
 
 [username]
 show_always = true
-format = "[ $user ]($style)"
-style_user = "fg:color_fg bg:color_purple bold"
-style_root = "fg:color_fg bg:color_err bold"
+style_user = "bg:color_orange fg:color_fg0"
+style_root = "bg:color_orange fg:color_fg0"
+format = '[ $user ]($style)'
 
 [hostname]
 ssh_only = false
-format = "[  $hostname ]($style)"
-style = "fg:color_fg bg:color_rose bold"
+format = '[  $hostname ]($style)'
+style = "bg:color_peach fg:color_fg0"
 
 [directory]
+style = "fg:color_fg0 bg:color_yellow"
 format = "[ $path ]($style)"
-style = "fg:color_fg bg:color_green bold"
 truncation_length = 4
 truncation_symbol = "…/"
 read_only = " 󰌾"
@@ -91,95 +108,97 @@ read_only = " 󰌾"
 "/workspaces" = " "
 "Documents" = "󰈙 "
 "Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"Developer" = "󰲋 "
 "~" = " "
 
 [git_branch]
 symbol = ""
-format = "[ $symbol $branch ]($style)"
-style = "fg:color_fg bg:color_lavender bold"
+style = "bg:color_aqua"
+format = '[[ $symbol $branch ](fg:color_fg0 bg:color_aqua)]($style)'
 
 [git_status]
-format = "[($all_status$ahead_behind )]($style)"
-style = "fg:color_fg bg:color_lavender"
-conflicted = "  "
-ahead     = " ⇡${count}"
-behind    = " ⇣${count}"
-diverged  = " ⇕⇡${ahead_count}⇣${behind_count}"
-untracked = " ?"
-stashed   = " 󰏗"
-modified  = " !"
-staged    = " +"
-renamed   = " »"
-deleted   = " ✘"
+style = "bg:color_aqua"
+format = '[[($all_status$ahead_behind )](fg:color_fg0 bg:color_aqua)]($style)'
 
 [c]
 symbol = " "
-format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
-style = "bg:color_sky"
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[python]
+[cpp]
 symbol = " "
-format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
-style = "bg:color_sky"
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [nodejs]
-symbol = " "
-format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
-style = "bg:color_sky"
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [php]
-symbol = " "
-format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
-style = "bg:color_sky"
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [rust]
-symbol = " "
-format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
-style = "bg:color_sky"
-
-[java]
-symbol = " "
-format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
-style = "bg:color_sky"
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [golang]
-symbol = " "
-format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
-style = "bg:color_sky"
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[java]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [kotlin]
-symbol = " "
-format = '[[ $symbol($version) ](fg:color_fg bg:color_sky)]($style)'
-style = "bg:color_sky"
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[haskell]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[python]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [docker_context]
-symbol = " "
-format = '[[ $symbol$context ](fg:color_fg bg:color_teal)]($style)'
-style = "bg:color_teal"
+symbol = ""
+style = "bg:color_bg3"
+format = '[[ $symbol( $context) ](fg:#83a598 bg:color_bg3)]($style)'
 
-# ─── Fill ─────────────────────────────────────────────────────────
+[conda]
+style = "bg:color_bg3"
+format = '[[ $symbol( $environment) ](fg:#83a598 bg:color_bg3)]($style)'
 
-[fill]
-symbol = " "
-
-# ─── Right side of line 1 ────────────────────────────────────────
-
-[cmd_duration]
-min_time = 2_000
-format = "  [󱎫 $duration]($style)"
-style = "fg:color_muted italic"
-
-# ─── Line 2 ──────────────────────────────────────────────────────
+[pixi]
+style = "bg:color_bg3"
+format = '[[ $symbol( $version)( $environment) ](fg:color_fg0 bg:color_bg3)]($style)'
 
 [time]
 disabled = false
-format = "[  $time ]($style)"
 time_format = "%d/%m %H:%M:%S"
-style = "fg:color_fg_soft bg:color_muted"
+style = "bg:color_bg1"
+format = '[[  $time ](fg:color_fg0 bg:color_bg1)]($style)'
+
+[line_break]
+disabled = false
 
 [character]
-success_symbol = "[❯](fg:color_ok bold)"
-error_symbol = "[❯](fg:color_err bold)"
-vimcmd_symbol = "[❮](fg:color_ok bold)"
-vimcmd_replace_one_symbol = "[❮](fg:color_warn bold)"
-vimcmd_replace_symbol = "[❮](fg:color_warn bold)"
+disabled = false
+success_symbol = '[](bold fg:color_green)'
+error_symbol = '[](bold fg:color_red)'
+vimcmd_symbol = '[](bold fg:color_green)'
+vimcmd_replace_one_symbol = '[](bold fg:color_purple)'
+vimcmd_replace_symbol = '[](bold fg:color_purple)'
+vimcmd_visual_symbol = '[](bold fg:color_yellow)'
