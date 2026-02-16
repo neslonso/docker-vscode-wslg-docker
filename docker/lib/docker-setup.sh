@@ -46,6 +46,26 @@ start_docker_daemon() {
         done
     fi
 
+    # Clean stale socket files from previous unclean shutdown
+    if [ -S /var/run/docker.sock ] && ! docker info &>/dev/null 2>&1; then
+        echo "  → Cleaning stale Docker socket..."
+        sudo rm -f /var/run/docker.sock
+    fi
+
+    # Clean stale containerd state
+    if [ -f /var/run/containerd/containerd.pid ]; then
+        local pid=$(cat /var/run/containerd/containerd.pid 2>/dev/null)
+        if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+            echo "  → Cleaning stale containerd PID file..."
+            sudo rm -f /var/run/containerd/containerd.pid
+        fi
+    fi
+    # Clean stale containerd sockets
+    if [ -S /var/run/containerd/containerd.sock ] && [ ! -f /var/run/containerd/containerd.pid ]; then
+        echo "  → Cleaning stale containerd socket..."
+        sudo rm -f /var/run/containerd/containerd.sock
+    fi
+
     sudo dockerd --host=unix:///var/run/docker.sock &
 
     # Wait for Docker to be ready
@@ -155,9 +175,36 @@ shutdown_docker_daemon() {
         docker stop $containers --time 10 2>/dev/null || true
     fi
 
-    # Give dockerd a moment to shut down cleanly
-    echo "  → Waiting for daemon shutdown..."
-    sleep 2
+    # Gracefully stop dockerd by sending SIGTERM
+    local dockerd_pid=$(cat /var/run/docker.pid 2>/dev/null)
+
+    if [ -n "$dockerd_pid" ] && kill -0 "$dockerd_pid" 2>/dev/null; then
+        echo "  → Sending SIGTERM to dockerd (PID $dockerd_pid)..."
+        sudo kill -TERM "$dockerd_pid" 2>/dev/null || true
+
+        # Wait for dockerd to exit cleanly (up to 15 seconds)
+        local timeout=15
+        for i in $(seq 1 $timeout); do
+            if ! kill -0 "$dockerd_pid" 2>/dev/null; then
+                echo "  ✓ dockerd stopped cleanly after ${i}s"
+                break
+            fi
+            if [ "$i" -eq "$timeout" ]; then
+                echo "  ⚠ dockerd didn't stop after ${timeout}s, sending SIGKILL..."
+                sudo kill -KILL "$dockerd_pid" 2>/dev/null || true
+                sleep 1
+            fi
+            sleep 1
+        done
+    else
+        echo "  ℹ dockerd PID not found or not running"
+    fi
+
+    # Clean up residual runtime files to prevent issues on restart
+    sudo rm -f /var/run/docker.pid
+    sudo rm -f /var/run/docker.sock
+    sudo rm -rf /var/run/docker/containerd
+    sudo rm -f /var/run/containerd/containerd.pid
 
     echo "✓ Docker daemon shutdown complete"
     return 0

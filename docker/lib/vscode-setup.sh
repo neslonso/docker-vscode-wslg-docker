@@ -13,6 +13,32 @@ COLOR_RED='\033[0;31m'
 COLOR_RESET='\033[0m'
 
 ##
+# Converts JSONC (JSON with Comments) to strict JSON
+#
+# VSCode settings files use JSONC format which allows:
+# - Single-line comments (// ...)
+# - Trailing commas before } or ]
+#
+# This function strips those features so the output can be parsed by jq.
+#
+# Globals:
+#   None
+# Arguments:
+#   $1 - Path to JSONC file
+# Outputs:
+#   Clean JSON to stdout
+# Returns:
+#   0 always
+##
+sanitize_jsonc() {
+    local file="$1"
+    # 1. Remove full-line // comments
+    # 2. Remove trailing commas before } or ] (perl -0 slurps entire input)
+    grep -v '^\s*//' "$file" | \
+        perl -0pe 's/,(\s*[}\]])/$1/g'
+}
+
+##
 # Configures permissions on VSCode directories
 #
 # Ensures that the 'dev' user has full access to VSCode
@@ -67,8 +93,13 @@ EOF
         echo "$default_settings" > "$settings_file"
     else
         # Merge: default_settings as base, user settings take priority
-        jq -s '.[0] * .[1]' <(echo "$default_settings") "$settings_file" > "${settings_file}.tmp" || return 1
-        mv "${settings_file}.tmp" "$settings_file"
+        # Sanitize existing file in case it contains JSONC (comments, trailing commas)
+        if jq -s '.[0] * .[1]' <(echo "$default_settings") <(sanitize_jsonc "$settings_file") > "${settings_file}.tmp" 2>/dev/null; then
+            mv "${settings_file}.tmp" "$settings_file"
+        else
+            echo -e "${COLOR_YELLOW}  ⚠ Warning: Could not merge settings.json (invalid JSON), keeping existing file${COLOR_RESET}"
+            rm -f "${settings_file}.tmp"
+        fi
     fi
 }
 
@@ -124,10 +155,9 @@ apply_profile_vscode_settings() {
         echo -e "${COLOR_BLUE}⚙️  Applying VSCode configuration...${COLOR_RESET}"
         echo -e "${COLOR_BLUE}   DEBUG: Settings file: $profile_dir/vscode/settings.json${COLOR_RESET}"
 
-        # Validate JSON before continuing
-        if ! jq empty "$profile_dir/vscode/settings.json" 2>/dev/null; then
-            echo -e "${COLOR_RED}   ✗ ERROR: settings.json contains invalid JSON${COLOR_RESET}"
-            echo -e "${COLOR_RED}   Verify it doesn't have comments (//) or incorrect syntax${COLOR_RESET}"
+        # Validate JSON after sanitizing JSONC (comments, trailing commas)
+        if ! sanitize_jsonc "$profile_dir/vscode/settings.json" | jq empty 2>/dev/null; then
+            echo -e "${COLOR_RED}   ✗ ERROR: settings.json contains invalid JSON (even after JSONC cleanup)${COLOR_RESET}"
             return 1
         fi
         echo -e "${COLOR_GREEN}   ✓ Valid JSON${COLOR_RESET}"
@@ -140,29 +170,30 @@ apply_profile_vscode_settings() {
 
             # Merge using jq (profile doesn't override user configuration)
             # Priority: PROFILE < USER (user has final say)
+            # Sanitize both files to handle JSONC (comments, trailing commas)
             if command -v jq &>/dev/null; then
                 jq -s '.[0] * .[1]' \
-                    "$profile_dir/vscode/settings.json" \
-                    "$settings_dir/settings.json.backup" \
-                    > "$settings_dir/settings.json.tmp" 2>&1
+                    <(sanitize_jsonc "$profile_dir/vscode/settings.json") \
+                    <(sanitize_jsonc "$settings_dir/settings.json.backup") \
+                    > "$settings_dir/settings.json.tmp" 2>/dev/null
 
                 if [ $? -eq 0 ]; then
                     mv "$settings_dir/settings.json.tmp" "$settings_dir/settings.json"
-					echo -e "${COLOR_GREEN}  ✓ Settings merged successfully${COLOR_RESET}"
+                    echo -e "${COLOR_GREEN}  ✓ Settings merged successfully${COLOR_RESET}"
                 else
                     # If merge fails, use only profile settings
                     echo -e "${COLOR_YELLOW}  ⚠ Merge error, using profile settings${COLOR_RESET}"
-                    cp "$profile_dir/vscode/settings.json" "$settings_dir/settings.json"
+                    sanitize_jsonc "$profile_dir/vscode/settings.json" > "$settings_dir/settings.json"
                 fi
             else
                 # If jq not available, simply copy profile settings
-                cp "$profile_dir/vscode/settings.json" "$settings_dir/settings.json"
-				echo -e "${COLOR_YELLOW}  ⚠ jq not available, using profile settings only${COLOR_RESET}"
+                sanitize_jsonc "$profile_dir/vscode/settings.json" > "$settings_dir/settings.json"
+                echo -e "${COLOR_YELLOW}  ⚠ jq not available, using profile settings only${COLOR_RESET}"
             fi
         else
             echo -e "${COLOR_BLUE}   DEBUG: No previous settings, applying from profile${COLOR_RESET}"
-            # No previous settings, use profile settings
-            cp "$profile_dir/vscode/settings.json" "$settings_dir/settings.json"
+            # No previous settings, use profile settings (sanitized)
+            sanitize_jsonc "$profile_dir/vscode/settings.json" > "$settings_dir/settings.json"
             echo -e "${COLOR_GREEN}  ✓ Settings applied${COLOR_RESET}"
         fi
     fi
@@ -482,8 +513,8 @@ prepare_readme_open() {
 launch_vscode() {
     echo "🚀 Starting VSCode GUI..."
 
-    # Use WORKSPACE_PATH if set, otherwise default to /workspace for backward compatibility
-    local workspace_path="${WORKSPACE_PATH:-/workspace}"
+    # Use WORKSPACE_PATH if set, otherwise default to /workspaces
+    local workspace_path="${WORKSPACE_PATH:-/workspaces}"
     local vscode_cmd="code --new-window --no-sandbox $workspace_path"
     echo "🔍 DEBUG: VSCode command: $vscode_cmd"
     echo "🔍 DEBUG: Workspace path: $workspace_path"
