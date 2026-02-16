@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdotool \
     surf \
     make \
+    unzip \
+    fontconfig \
     # Dependencias GUI para VSCode/Electron
     libx11-xcb1 \
     libxkbfile1 \
@@ -104,6 +106,26 @@ RUN useradd -ms /bin/bash dev \
 RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
         usermod -aG docker dev; \
     fi
+
+# ============================================================================
+# Shell: Starship prompt + Nerd Font
+# ============================================================================
+
+# Install starship prompt
+RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
+
+# Install FiraCode Nerd Font for terminal icons
+RUN mkdir -p /usr/share/fonts/nerd-fonts \
+    && curl -fLo /tmp/FiraCode.zip \
+       https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip \
+    && unzip -j /tmp/FiraCode.zip '*.ttf' -d /usr/share/fonts/nerd-fonts/ \
+    && rm /tmp/FiraCode.zip \
+    && fc-cache -f
+
+# Shell configuration (defaults, persisted via shell-persist volume)
+RUN mkdir -p /home/dev/.config && chown dev:dev /home/dev/.config
+COPY --chown=dev:dev docker/shell/bashrc /home/dev/.bashrc
+COPY --chown=dev:dev docker/shell/starship.toml /home/dev/.config/starship.toml
 
 # ============================================================================
 # Copiar bibliotecas y scripts

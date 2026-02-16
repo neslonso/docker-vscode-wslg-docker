@@ -1,0 +1,32 @@
+# Starship prompt - 2-line layout
+# Line 1: user@host path [git] [language]
+# Line 2: [datetime]$
+
+format = """$username[@](bold white)$hostname $directory$git_branch$git_status$python$nodejs$php$rust$java\
+$line_break\
+$time$character"""
+
+[username]
+show_always = true
+format = "[$user]($style)"
+style_user = "bold blue"
+
+[hostname]
+ssh_only = false
+format = "[$hostname]($style)"
+style = "bold #ff8700"
+
+[directory]
+format = "[$path]($style)"
+style = "yellow"
+truncation_length = 0
+
+[time]
+disabled = false
+format = "[\\[$time\\]]($style)"
+time_format = "%d/%m %H:%M:%S"
+style = "cyan"
+
+[character]
+success_symbol = "[\\$](white)"
+error_symbol = "[\\$](red)"

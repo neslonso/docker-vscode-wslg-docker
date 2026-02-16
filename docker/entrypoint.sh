@@ -38,6 +38,29 @@ cleanup_and_exit() {
 trap cleanup_and_exit SIGTERM SIGINT
 
 # ============================================================================
+# Shell persistence
+# ============================================================================
+# Persist .bash_history, .bashrc and .bash_aliases across container recreations
+# by symlinking ~/.<file> -> ~/.shell_persist/<file> (volume-backed).
+# On first run, seeds persistent storage from image defaults.
+
+setup_shell_persistence() {
+    local persist_dir="/home/dev/.shell_persist"
+    mkdir -p "$persist_dir"
+
+    for f in .bash_history .bashrc .bash_aliases; do
+        # First run: seed persistent storage from image defaults
+        if [ ! -f "$persist_dir/$f" ] && [ -f "/home/dev/$f" ] && [ ! -L "/home/dev/$f" ]; then
+            cp "/home/dev/$f" "$persist_dir/$f"
+        fi
+        # Symlink to persistent storage
+        ln -sf "$persist_dir/$f" "/home/dev/$f"
+    done
+}
+
+setup_shell_persistence
+
+# ============================================================================
 # Initial setup
 # ============================================================================
 

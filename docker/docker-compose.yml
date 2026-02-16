@@ -15,6 +15,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.base
+    hostname: "${CONTAINER_HOSTNAME:-vsc-wslg}"
     shm_size: '1gb'
     environment:
       - DISPLAY
@@ -38,9 +39,14 @@ services:
       # VSCode persistent data
       - vscode-extensions:/home/dev/.vscode
       - vscode-config:/home/dev/.config/Code
+
+      # Shell persistence (.bash_history, .bashrc, .bash_aliases)
+      - shell-persist:/home/dev/.shell_persist
     restart: "no"
 
 volumes:
   # VSCode extensions and configuration (shared across modes)
   vscode-extensions:
   vscode-config:
+  # Shell files persistence across container recreations
+  shell-persist:
