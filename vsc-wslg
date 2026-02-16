@@ -307,7 +307,7 @@ compose_args="-f $base_compose -f $mode_compose"
 
 export COMPOSE_PROJECT_NAME="$proj_name"
 export PROJECT_DIR="$project_dir"
-export WORKSPACE_NAME="$raw_name"  # Mount point will be /<directory-name>
+export WORKSPACE_NAME="$raw_name"  # Mount point will be /workspaces/<directory-name>
 export VSCODE_EXTENSIONS_PROFILE="$profile"
 export PROFILE_DIR="$script_dir/profiles/$profile"
 
