@@ -38,6 +38,36 @@ cleanup_and_exit() {
 trap cleanup_and_exit SIGTERM SIGINT
 
 # ============================================================================
+# Shell persistence
+# ============================================================================
+# Persist shell config files across container recreations
+# by symlinking to ~/.shell_persist/ (volume-backed).
+# On first run, seeds persistent storage from image defaults.
+
+setup_shell_persistence() {
+    local persist_dir="/home/dev/.shell_persist"
+    sudo chown dev:dev "$persist_dir" 2>/dev/null || true
+    mkdir -p "$persist_dir"
+
+    # Home-level dotfiles
+    for f in .bash_history .bashrc .bash_aliases; do
+        if [ ! -f "$persist_dir/$f" ] && [ -f "/home/dev/$f" ] && [ ! -L "/home/dev/$f" ]; then
+            cp "/home/dev/$f" "$persist_dir/$f"
+        fi
+        ln -sf "$persist_dir/$f" "/home/dev/$f"
+    done
+
+    # Starship config (~/.config/starship.toml)
+    local starship_cfg="/home/dev/.config/starship.toml"
+    if [ ! -f "$persist_dir/starship.toml" ] && [ -f "$starship_cfg" ] && [ ! -L "$starship_cfg" ]; then
+        cp "$starship_cfg" "$persist_dir/starship.toml"
+    fi
+    ln -sf "$persist_dir/starship.toml" "$starship_cfg"
+}
+
+setup_shell_persistence
+
+# ============================================================================
 # Initial setup
 # ============================================================================
 

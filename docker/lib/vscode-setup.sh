@@ -85,8 +85,9 @@ setup_vscode_settings() {
     local default_settings=$(cat <<'EOF'
 {
   "window.titleBarStyle": "native",
+  "editor.fontLigatures": true,
   "editor.fontFamily": "'FiraCode Nerd Font Mono', 'Hack Nerd Font Mono', 'MesloLGM Nerd Font', monospace",
-  "editor.fontLigatures": true
+  "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font Mono', 'FiraCode Nerd Font Mono', 'Hack Nerd Font Mono', 'MesloLGM Nerd Font', monospace"
 }
 EOF
 )

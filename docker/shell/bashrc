@@ -1,0 +1,41 @@
+# ~/.bashrc: executed by bash(1) for non-login shells.
+
+# If not running interactively, don't do anything
+# (prevents issues when sourced by non-interactive shells like scp, rsync, etc.)
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+# ---------------------------------------------------------------------------
+# History
+# ---------------------------------------------------------------------------
+HISTCONTROL=ignoreboth
+HISTSIZE=1000
+HISTFILESIZE=2000
+shopt -s histappend
+
+# ---------------------------------------------------------------------------
+# Shell options
+# ---------------------------------------------------------------------------
+shopt -s checkwinsize
+
+# ---------------------------------------------------------------------------
+# Aliases
+# ---------------------------------------------------------------------------
+alias ls='ls --color=auto'
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# ---------------------------------------------------------------------------
+# Prompt (starship)
+# ---------------------------------------------------------------------------
+eval "$(starship init bash)"

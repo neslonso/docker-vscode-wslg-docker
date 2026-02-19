@@ -308,6 +308,7 @@ compose_args="-f $base_compose -f $mode_compose"
 export COMPOSE_PROJECT_NAME="$proj_name"
 export PROJECT_DIR="$project_dir"
 export WORKSPACE_NAME="$raw_name"  # Mount point will be /workspaces/<directory-name>
+export CONTAINER_HOSTNAME="vsc-${safe_name}"
 export VSCODE_EXTENSIONS_PROFILE="$profile"
 export PROFILE_DIR="$script_dir/profiles/$profile"
 
@@ -343,7 +344,7 @@ case "$action" in
 		;;
 	clean)
 		docker compose $compose_args down -v
-		echo "✓ Volumes removed: ${proj_name}_vscode-extensions, ${proj_name}_vscode-config"
+		echo "✓ Volumes removed: ${proj_name}_vscode-extensions, ${proj_name}_vscode-config, ${proj_name}_shell-persist"
 		;;
 	*)
 		echo "✗ Unknown action: $action" >&2
