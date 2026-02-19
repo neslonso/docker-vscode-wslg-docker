@@ -85,7 +85,8 @@ setup_vscode_settings() {
     local default_settings=$(cat <<'EOF'
 {
   "window.titleBarStyle": "native",
-  "terminal.integrated.fontFamily": "'FiraCode Nerd Font', monospace"
+  "terminal.integrated.fontFamily": "'FiraCode Nerd Font Mono', 'FiraCode Nerd Font', monospace",
+  "terminal.integrated.minimumContrastRatio": 1
 }
 EOF
 )
