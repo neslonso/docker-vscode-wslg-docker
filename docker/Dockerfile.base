@@ -119,6 +119,10 @@ RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
 # Install starship prompt
 RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
 
+# Install eza (modern ls replacement with icons and git integration)
+RUN curl -fsSL https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz \
+    | tar xz -C /usr/local/bin
+
 # Install Nerd Fonts for terminal icons and powerline separators
 RUN mkdir -p /usr/share/fonts/nerd-fonts \
     && for font in FiraCode Hack Meslo JetBrainsMono; do \
