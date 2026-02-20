@@ -4,6 +4,7 @@ format = """
 [](color_orange)\
 $os\
 $username\
+$hostname\
 [](bg:color_yellow fg:color_orange)\
 $directory\
 [](fg:color_yellow bg:color_aqua)\
@@ -75,13 +76,19 @@ Pop = ""
 show_always = true
 style_user = "bg:color_orange fg:color_fg0"
 style_root = "bg:color_orange fg:color_fg0"
-format = '[ $user ]($style)'
+format = '[ $user]($style)'
+
+[hostname]
+ssh_only = false
+style = "bg:color_orange fg:color_fg0"
+format = '[@$hostname ]($style)'
 
 [directory]
 style = "fg:color_fg0 bg:color_yellow"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
+home_symbol = " "
 
 [directory.substitutions]
 "Documents" = "󰈙 "
@@ -89,6 +96,7 @@ truncation_symbol = "…/"
 "Music" = "󰝚 "
 "Pictures" = " "
 "Developer" = "󰲋 "
+"/workspaces" = " "
 
 [git_branch]
 symbol = ""
@@ -164,7 +172,7 @@ format = '[[ $symbol( $version)( $environment) ](fg:color_fg0 bg:color_bg3)]($st
 
 [time]
 disabled = false
-time_format = "%R"
+time_format = "%a %d/%m %R %Z"
 style = "bg:color_bg1"
 format = '[[  $time ](fg:color_fg0 bg:color_bg1)]($style)'
 
