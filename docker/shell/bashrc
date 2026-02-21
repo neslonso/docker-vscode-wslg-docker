@@ -23,10 +23,14 @@ shopt -s checkwinsize
 # ---------------------------------------------------------------------------
 # Aliases
 # ---------------------------------------------------------------------------
-alias ls='ls --color=auto'
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
+# eza (modern ls with icons and git integration)
+alias ls='eza --icons'
+alias ll='eza -lag --icons --git'
+alias la='eza -a --icons'
+alias l='eza --icons'
+alias lt='eza --tree --icons --level=2'
+alias llt='eza -lag --tree --icons --level=2 --git'
+# grep
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
@@ -34,6 +38,12 @@ alias egrep='egrep --color=auto'
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
+
+# ---------------------------------------------------------------------------
+# Zoxide (smarter cd)
+# ---------------------------------------------------------------------------
+eval "$(zoxide init bash)"
+alias cd='z'
 
 # ---------------------------------------------------------------------------
 # Prompt (starship)

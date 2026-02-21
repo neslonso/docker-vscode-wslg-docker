@@ -5,7 +5,7 @@
 #   INSTALL_DOCKER_DAEMON: "true" para DinD, "false" para DooD
 #   ENTRYPOINT_MODE: "dind" o "dood" para seleccionar el entrypoint correcto
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Variables de construcción con valores por defecto
 ARG INSTALL_DOCKER_DAEMON=false
@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     jq \
     xdotool \
-    surf \
+    firefox-esr \
     make \
     unzip \
     fontconfig \
@@ -40,11 +40,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libx11-xcb1 \
     libxkbfile1 \
     libsecret-1-0 \
-    libgtk-3-0 \
+    libgtk-3-0t64 \
     libnss3 \
-    libasound2 \
+    libasound2t64 \
     libgbm1 \
     libxshmfence1 \
+    # Herramientas de terminal modernas
+    eza \
+    zoxide \
     # Para Remote Containers / devcontainers
     git \
     && rm -rf /var/lib/apt/lists/* \
@@ -69,7 +72,7 @@ RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
 
 # Configurar repositorio de Docker
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian trixie stable" > /etc/apt/sources.list.d/docker.list
 
 # Instalar Docker (daemon + CLI para DinD, solo CLI para DooD)
 RUN apt-get update && \
@@ -119,14 +122,21 @@ RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
 # Install starship prompt
 RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
 
-# Install Nerd Fonts for terminal icons and powerline separators
+# Install JetBrainsMono Nerd Font (icons, ligatures, italics)
 RUN mkdir -p /usr/share/fonts/nerd-fonts \
-    && for font in FiraCode Hack Meslo JetBrainsMono; do \
-        curl -fLo /tmp/${font}.zip \
-            https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font}.zip \
-        && unzip -j /tmp/${font}.zip '*.ttf' -d /usr/share/fonts/nerd-fonts/ \
-        && rm /tmp/${font}.zip; \
-    done \
+    && curl -fLo /tmp/JetBrainsMono.zip \
+        https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip \
+    && unzip -j /tmp/JetBrainsMono.zip \
+        'JetBrainsMonoNerdFont-Regular.ttf' \
+        'JetBrainsMonoNerdFont-Bold.ttf' \
+        'JetBrainsMonoNerdFont-Italic.ttf' \
+        'JetBrainsMonoNerdFont-BoldItalic.ttf' \
+        'JetBrainsMonoNerdFontMono-Regular.ttf' \
+        'JetBrainsMonoNerdFontMono-Bold.ttf' \
+        'JetBrainsMonoNerdFontMono-Italic.ttf' \
+        'JetBrainsMonoNerdFontMono-BoldItalic.ttf' \
+        -d /usr/share/fonts/nerd-fonts/ \
+    && rm /tmp/JetBrainsMono.zip \
     && fc-cache -f
 
 # Shell configuration (defaults, persisted via shell-persist volume)
