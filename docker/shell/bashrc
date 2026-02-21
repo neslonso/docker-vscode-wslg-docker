@@ -53,16 +53,14 @@ eval "$(fzf --bash)"
 eval "$(starship init bash)"
 
 # ---------------------------------------------------------------------------
-# pnpm (added here so zoxide stays last; harmless if pnpm is not installed)
+# Profile environment (PATH, env vars added by profile setup scripts).
+# Profiles MUST write here instead of .bashrc — see profiles/README.md
 # ---------------------------------------------------------------------------
-export PNPM_HOME="/home/dev/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
+[ -f ~/.bashrc_profile ] && . ~/.bashrc_profile
 
 # ---------------------------------------------------------------------------
-# Zoxide (smarter cd) — must be last, see https://github.com/ajeetdsouza/zoxide#installation
+# Zoxide (smarter cd) — MUST be last, nothing should be added below this line
+# see https://github.com/ajeetdsouza/zoxide#installation
 # ---------------------------------------------------------------------------
 eval "$(zoxide init bash)"
 alias cd='z'
