@@ -33,6 +33,7 @@ alias llt='eza -lag --tree --icons --level=2 --git'
 # bat (cat with syntax highlighting; Debian package name is 'bat')
 alias cat='batcat --paging=never'
 alias catp='batcat'
+alias less='batcat'
 # grep
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
