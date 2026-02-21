@@ -50,7 +50,7 @@ setup_shell_persistence() {
     mkdir -p "$persist_dir"
 
     # Home-level dotfiles
-    for f in .bash_history .bashrc .bash_aliases; do
+    for f in .bash_history .bashrc .bash_aliases .bashrc_profile; do
         if [ ! -f "$persist_dir/$f" ] && [ -f "/home/dev/$f" ] && [ ! -L "/home/dev/$f" ]; then
             cp "/home/dev/$f" "$persist_dir/$f"
         fi

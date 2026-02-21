@@ -48,6 +48,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Herramientas de terminal modernas
     eza \
     zoxide \
+    fzf \
+    bat \
+    htop \
+    less \
     # Para Remote Containers / devcontainers
     git \
     && rm -rf /var/lib/apt/lists/* \

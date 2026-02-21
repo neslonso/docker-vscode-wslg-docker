@@ -30,6 +30,9 @@ alias la='eza -a --icons'
 alias l='eza --icons'
 alias lt='eza --tree --icons --level=2'
 alias llt='eza -lag --tree --icons --level=2 --git'
+# bat (cat with syntax highlighting; Debian package name is 'bat')
+alias cat='batcat --paging=never'
+alias catp='batcat'
 # grep
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
@@ -40,12 +43,29 @@ if [ -f ~/.bash_aliases ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Zoxide (smarter cd)
+# Fzf (fuzzy finder: Ctrl+R for history, Ctrl+T for files)
 # ---------------------------------------------------------------------------
-eval "$(zoxide init bash)"
-alias cd='z'
+eval "$(fzf --bash)"
 
 # ---------------------------------------------------------------------------
 # Prompt (starship)
 # ---------------------------------------------------------------------------
 eval "$(starship init bash)"
+
+# ---------------------------------------------------------------------------
+# Profile environment (PATH, env vars added by profile setup scripts).
+# Profiles MUST write here instead of .bashrc — see profiles/README.md
+# ---------------------------------------------------------------------------
+[ -f ~/.bashrc_profile ] && . ~/.bashrc_profile
+
+# ---------------------------------------------------------------------------
+# Zoxide (smarter cd) — MUST be last, nothing should be added below this line
+# see https://github.com/ajeetdsouza/zoxide#installation
+#
+# --cmd cd  makes zoxide replace the builtin cd command directly, creating:
+#   cd  → smart jump (learns directories you visit)
+#   cdi → interactive selection with fzf
+# This is the recommended way to alias cd — a manual "alias cd='z'" breaks
+# zoxide's PROMPT_COMMAND hook and shows a configuration warning.
+# ---------------------------------------------------------------------------
+eval "$(zoxide init bash --cmd cd)"
