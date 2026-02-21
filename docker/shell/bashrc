@@ -30,6 +30,9 @@ alias la='eza -a --icons'
 alias l='eza --icons'
 alias lt='eza --tree --icons --level=2'
 alias llt='eza -lag --tree --icons --level=2 --git'
+# bat (cat with syntax highlighting; Debian package name is 'bat')
+alias cat='batcat --paging=never'
+alias catp='batcat'
 # grep
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
@@ -38,6 +41,11 @@ alias egrep='egrep --color=auto'
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
+
+# ---------------------------------------------------------------------------
+# Fzf (fuzzy finder: Ctrl+R for history, Ctrl+T for files)
+# ---------------------------------------------------------------------------
+eval "$(fzf --bash)"
 
 # ---------------------------------------------------------------------------
 # Zoxide (smarter cd)
