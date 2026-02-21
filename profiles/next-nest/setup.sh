@@ -35,8 +35,16 @@ fi
 if ! command -v pnpm &> /dev/null; then
     echo "  → Installing pnpm..."
     curl -fsSL https://get.pnpm.io/install.sh | sh -
-    # The pnpm installer appends PATH config to .bashrc — move it to
-    # .bashrc_profile so zoxide stays last (see profiles/README.md)
+
+    # --- Redirect pnpm's PATH config to ~/.bashrc_profile ---
+    # The pnpm installer auto-appends a block (delimited by "# pnpm" /
+    # "# pnpm end") to ~/.bashrc.  We can't leave it there because zoxide
+    # must be the LAST thing evaluated in .bashrc (see profiles/README.md).
+    #
+    # Strategy:
+    #   1. Delete the block the installer just added to .bashrc
+    #   2. Write the same config to ~/.bashrc_profile, which .bashrc
+    #      sources right before zoxide init
     sed -i '/# pnpm$/,/# pnpm end$/d' ~/.bashrc
     cat >> ~/.bashrc_profile << 'PNPM'
 # pnpm
@@ -46,7 +54,9 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 PNPM
-    # Add pnpm to PATH for current session
+
+    # Make pnpm available for the rest of THIS setup script (the exports
+    # above only take effect on the next interactive shell)
     export PNPM_HOME="/home/dev/.local/share/pnpm"
     export PATH="$PNPM_HOME:$PATH"
 else
