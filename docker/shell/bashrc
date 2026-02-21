@@ -55,5 +55,6 @@ eval "$(starship init bash)"
 # ---------------------------------------------------------------------------
 # Zoxide (smarter cd) — must be last, see https://github.com/ajeetdsouza/zoxide#installation
 # ---------------------------------------------------------------------------
+export _ZO_DOCTOR=0
 eval "$(zoxide init bash)"
 alias cd='z'
