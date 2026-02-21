@@ -67,5 +67,10 @@ eval "$(starship init bash)"
 #   cdi → interactive selection with fzf
 # This is the recommended way to alias cd — a manual "alias cd='z'" breaks
 # zoxide's PROMPT_COMMAND hook and shows a configuration warning.
+#
+# _ZO_DOCTOR=0 — VSCode's terminal shell integration appends its own hook to
+# PROMPT_COMMAND after .bashrc finishes, which triggers a false-positive
+# warning from zoxide's doctor check.  Zoxide still works correctly.
 # ---------------------------------------------------------------------------
+export _ZO_DOCTOR=0
 eval "$(zoxide init bash --cmd cd)"
