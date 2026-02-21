@@ -61,6 +61,11 @@ eval "$(starship init bash)"
 # ---------------------------------------------------------------------------
 # Zoxide (smarter cd) — MUST be last, nothing should be added below this line
 # see https://github.com/ajeetdsouza/zoxide#installation
+#
+# --cmd cd  makes zoxide replace the builtin cd command directly, creating:
+#   cd  → smart jump (learns directories you visit)
+#   cdi → interactive selection with fzf
+# This is the recommended way to alias cd — a manual "alias cd='z'" breaks
+# zoxide's PROMPT_COMMAND hook and shows a configuration warning.
 # ---------------------------------------------------------------------------
-eval "$(zoxide init bash)"
-alias cd='z'
+eval "$(zoxide init bash --cmd cd)"
