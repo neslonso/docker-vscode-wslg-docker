@@ -87,6 +87,9 @@ if ! command -v pnpm &> /dev/null; then
     echo "  → Installing pnpm..."
     export SHELL=/bin/bash
     curl -fsSL https://get.pnpm.io/install.sh | sh -
+    # Remove the block that pnpm installer appends to .bashrc
+    # (PATH is already configured in .bashrc before zoxide)
+    sed -i '/# pnpm$/,/# pnpm end$/d' ~/.bashrc
     export PNPM_HOME="/home/dev/.local/share/pnpm"
     export PATH="$PNPM_HOME:$PATH"
 else

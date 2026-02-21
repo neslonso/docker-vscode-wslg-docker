@@ -53,8 +53,16 @@ eval "$(fzf --bash)"
 eval "$(starship init bash)"
 
 # ---------------------------------------------------------------------------
+# pnpm (added here so zoxide stays last; harmless if pnpm is not installed)
+# ---------------------------------------------------------------------------
+export PNPM_HOME="/home/dev/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+
+# ---------------------------------------------------------------------------
 # Zoxide (smarter cd) — must be last, see https://github.com/ajeetdsouza/zoxide#installation
 # ---------------------------------------------------------------------------
-export _ZO_DOCTOR=0
 eval "$(zoxide init bash)"
 alias cd='z'
