@@ -23,7 +23,7 @@ services:
       - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
       - PULSE_SERVER
       - VSCODE_EXTENSIONS_PROFILE
-      - BROWSER=surf
+      - BROWSER=firefox-esr
       - WORKSPACE_PATH=/workspaces/${WORKSPACE_NAME}
     volumes:
       # Project workspace (mounted with original directory name)
