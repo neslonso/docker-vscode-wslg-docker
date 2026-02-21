@@ -122,14 +122,21 @@ RUN if [ "$INSTALL_DOCKER_DAEMON" = "true" ]; then \
 # Install starship prompt
 RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
 
-# Install Nerd Fonts for terminal icons and powerline separators
+# Install JetBrainsMono Nerd Font (icons, ligatures, italics)
 RUN mkdir -p /usr/share/fonts/nerd-fonts \
-    && for font in FiraCode Hack Meslo JetBrainsMono; do \
-        curl -fLo /tmp/${font}.zip \
-            https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font}.zip \
-        && unzip -j /tmp/${font}.zip '*.ttf' -d /usr/share/fonts/nerd-fonts/ \
-        && rm /tmp/${font}.zip; \
-    done \
+    && curl -fLo /tmp/JetBrainsMono.zip \
+        https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip \
+    && unzip -j /tmp/JetBrainsMono.zip \
+        'JetBrainsMonoNerdFont-Regular.ttf' \
+        'JetBrainsMonoNerdFont-Bold.ttf' \
+        'JetBrainsMonoNerdFont-Italic.ttf' \
+        'JetBrainsMonoNerdFont-BoldItalic.ttf' \
+        'JetBrainsMonoNerdFontMono-Regular.ttf' \
+        'JetBrainsMonoNerdFontMono-Bold.ttf' \
+        'JetBrainsMonoNerdFontMono-Italic.ttf' \
+        'JetBrainsMonoNerdFontMono-BoldItalic.ttf' \
+        -d /usr/share/fonts/nerd-fonts/ \
+    && rm /tmp/JetBrainsMono.zip \
     && fc-cache -f
 
 # Shell configuration (defaults, persisted via shell-persist volume)
