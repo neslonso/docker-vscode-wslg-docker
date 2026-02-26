@@ -101,8 +101,10 @@ setup_vscode_settings
 # Process profile if specified
 process_vscode_profile
 
-# Workaround for WSLg bug (in background)
-apply_wslg_workaround
+# Workaround for WSLg bug (only applies in WSLg display mode)
+if [ "${DISPLAY_MODE:-wslg}" = "wslg" ]; then
+    apply_wslg_workaround
+fi
 
 # Install profile extensions
 install_vscode_extensions

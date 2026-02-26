@@ -1,0 +1,36 @@
+# ============================================================================
+# Native Linux X11 Display Mode - Override Configuration
+# ============================================================================
+# This file extends docker-compose.yml with native X11 display settings
+# for Linux desktops (e.g. Ubuntu + XFCE, GNOME on Xorg, etc.).
+#
+# X11 Mode Features:
+# - Uses host's X11 server directly via /tmp/.X11-unix (in base compose)
+# - Mounts host's Xauthority cookie for X11 authentication
+# - Mounts host's XDG_RUNTIME_DIR for PulseAudio and D-Bus sockets
+# - No WSLg workaround needed
+#
+# Auto-detected by vsc-wslg launcher when running on native Linux.
+#
+# Prerequisites:
+#   Xauthority file must exist (check $XAUTHORITY or ~/.Xauthority).
+#   Alternative: run 'xhost +local:docker' on host to allow container access.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dind.yml -f docker-compose.x11.yml up
+#
+# Environment variables set by the vsc-wslg launcher:
+#   HOST_XAUTHORITY       - Path to host's .Xauthority file
+#   HOST_XDG_RUNTIME_DIR  - Path to host's XDG_RUNTIME_DIR (e.g. /run/user/1000)
+
+services:
+  vscode:
+    environment:
+      - DISPLAY_MODE=x11
+      - XDG_RUNTIME_DIR=/run/user/1000
+      - XAUTHORITY=/home/dev/.Xauthority
+    volumes:
+      # X11 authentication cookie (from host)
+      - ${HOST_XAUTHORITY:-~/.Xauthority}:/home/dev/.Xauthority:ro
+      # XDG runtime directory (PulseAudio socket, D-Bus, etc.)
+      - ${HOST_XDG_RUNTIME_DIR:-/run/user/1000}:/run/user/1000

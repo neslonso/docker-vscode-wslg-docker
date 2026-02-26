@@ -4,6 +4,16 @@ set -e
 ########################################################################################################################
 # Functions
 
+# Detects whether we're running inside WSL2 (WSLg) or on native Linux (X11).
+# Returns "wslg" or "x11".
+detect_display_mode() {
+	if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+		echo "wslg"
+	else
+		echo "x11"
+	fi
+}
+
 check_running_instances() {
 	# Search for running vsc_* containers (excluding current one)
 	local running=$(docker ps --filter "name=vsc_" --format "{{.Names}}\t{{.Image}}\t{{.Label \"com.docker.compose.project.working_dir\"}}" 2>/dev/null | grep -v "^${proj_name}_")
@@ -75,11 +85,12 @@ check_running_instances() {
 
 				local base_compose="$script_dir/docker/docker-compose.yml"
 				local mode_compose="$script_dir/docker/docker-compose.${existing_mode}.yml"
-				echo "   🔍 DEBUG: Compose files: $base_compose + $mode_compose" >&2
-				echo "   🔍 DEBUG: Running: COMPOSE_PROJECT_NAME=$project docker compose -f $base_compose -f $mode_compose down" >&2
+				local disp_compose="$script_dir/docker/docker-compose.${display_mode}.yml"
+				echo "   🔍 DEBUG: Compose files: $base_compose + $mode_compose + $disp_compose" >&2
+				echo "   🔍 DEBUG: Running: COMPOSE_PROJECT_NAME=$project docker compose -f $base_compose -f $mode_compose -f $disp_compose down" >&2
 
 				# Stop using the correct compose files
-				COMPOSE_PROJECT_NAME="$project" docker compose -f "$base_compose" -f "$mode_compose" down 2>&1 | sed 's/^/      /'
+				COMPOSE_PROJECT_NAME="$project" docker compose -f "$base_compose" -f "$mode_compose" -f "$disp_compose" down 2>&1 | sed 's/^/      /'
 				local exit_code=$?
 				echo "   🔍 DEBUG: Exit code: $exit_code" >&2
 			done <<< "$running"
@@ -183,7 +194,8 @@ show_help() {
 	echo -e "  ${cyan}$0${reset} <action> [profile] [mode]" >&2
 	echo -e "  ${cyan}$0${reset} build [mode]" >&2
 	echo "" >&2
-	echo -e "Containerized VSCode launcher displayed via ${white}WSLg${reset}." >&2
+	echo -e "Containerized VSCode launcher with GUI support." >&2
+	echo -e "Display mode is auto-detected: ${white}WSLg${reset} (WSL2) or ${white}X11${reset} (native Linux)." >&2
 	echo -e "Run from the directory you want to mount." >&2
 	echo -e "The directory will be mounted at ${yellow}/<directory-name>${reset} inside the container." >&2
 	echo "" >&2
@@ -299,8 +311,28 @@ if [ ! -f "$mode_compose" ]; then
 	exit 1
 fi
 
+# Auto-detect display mode (WSLg or native X11)
+display_mode=$(detect_display_mode)
+display_compose="$script_dir/docker/docker-compose.${display_mode}.yml"
+
+if [ ! -f "$display_compose" ]; then
+	echo "✗ Couldn't find docker-compose for display '${display_mode}': $display_compose" >&2
+	exit 1
+fi
+
+# Export host-side variables needed by docker-compose.x11.yml
+if [ "$display_mode" = "x11" ]; then
+	export HOST_XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+	export HOST_XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}"
+
+	if [ ! -f "$HOST_XAUTHORITY" ]; then
+		echo "⚠ Xauthority file not found: $HOST_XAUTHORITY" >&2
+		echo "  Alternative: run 'xhost +local:docker' before launching." >&2
+	fi
+fi
+
 # Compose file arguments for docker compose command
-compose_args="-f $base_compose -f $mode_compose"
+compose_args="-f $base_compose -f $mode_compose -f $display_compose"
 
 ########################################################################################################################
 # Common environment variables
