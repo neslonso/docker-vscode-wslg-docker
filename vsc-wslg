@@ -4,10 +4,15 @@ set -e
 ########################################################################################################################
 # Functions
 
-# Detects whether we're running inside WSL2 (WSLg) or on native Linux (X11).
+# Detects whether WSLg is available or we're on native Linux (X11).
+# Checks for /mnt/wslg/runtime-dir which is the actual WSLg runtime mount.
+# This is more precise than /proc/sys/fs/binfmt_misc/WSLInterop because:
+# - WSLInterop exists in WSL1 too (which has no WSLg)
+# - WSLInterop exists in WSL2 even when WSLg is disabled
+# - /mnt/wslg/runtime-dir only exists when WSLg is active and functional
 # Returns "wslg" or "x11".
 detect_display_mode() {
-	if [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+	if [ -d /mnt/wslg/runtime-dir ]; then
 		echo "wslg"
 	else
 		echo "x11"
@@ -324,11 +329,6 @@ fi
 if [ "$display_mode" = "x11" ]; then
 	export HOST_XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 	export HOST_XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}"
-
-	if [ ! -f "$HOST_XAUTHORITY" ]; then
-		echo "⚠ Xauthority file not found: $HOST_XAUTHORITY" >&2
-		echo "  Alternative: run 'xhost +local:docker' before launching." >&2
-	fi
 fi
 
 # Compose file arguments for docker compose command
@@ -352,6 +352,18 @@ case "$action" in
 		# Rebuild doesn't care about COMPOSE_PROJECT_NAME as it doesn't create containers or networks
 		docker compose $compose_args build
 		;;
+	up|upd|upd-logs)
+		# Display mode feedback and X11 validation (only relevant when launching)
+		if [ "$display_mode" = "wslg" ]; then
+			echo "🖥  Display: WSLg (auto-detected)" >&2
+		else
+			echo "🖥  Display: X11 (auto-detected)" >&2
+			if [ ! -f "$HOST_XAUTHORITY" ]; then
+				echo "⚠ Xauthority file not found: $HOST_XAUTHORITY" >&2
+				echo "  Alternative: run 'xhost +local:docker' before launching." >&2
+			fi
+		fi
+		;;&
 	up)
 		# Check if there are other instances running
 		check_running_instances
