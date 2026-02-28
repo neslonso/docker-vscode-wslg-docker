@@ -74,6 +74,22 @@ setup_shell_persistence
 # Configure permissions on VSCode volumes
 setup_vscode_permissions
 
+# Ensure XDG_RUNTIME_DIR exists and is writable for VSCode IPC sockets.
+# In WSLg mode: /mnt/wslg/runtime-dir (mounted from host WSLg)
+# In X11 mode:  /run/user/1000 (bind-mounted from host)
+# The bind mount may fail silently or have wrong ownership, so we fix it here.
+echo "🖥  Display: ${DISPLAY_MODE:-unknown} | XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-unset}"
+if [ -n "$XDG_RUNTIME_DIR" ]; then
+    if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+        sudo mkdir -p "$XDG_RUNTIME_DIR"
+        sudo chown dev:dev "$XDG_RUNTIME_DIR"
+        sudo chmod 700 "$XDG_RUNTIME_DIR"
+    elif [ ! -w "$XDG_RUNTIME_DIR" ]; then
+        sudo chown dev:dev "$XDG_RUNTIME_DIR"
+        sudo chmod 700 "$XDG_RUNTIME_DIR"
+    fi
+fi
+
 # Docker setup based on mode
 case "${ENTRYPOINT_MODE}" in
     dind)
@@ -101,8 +117,10 @@ setup_vscode_settings
 # Process profile if specified
 process_vscode_profile
 
-# Workaround for WSLg bug (in background)
-apply_wslg_workaround
+# Workaround for WSLg bug (only applies in WSLg display mode)
+if [ "${DISPLAY_MODE}" = "wslg" ]; then
+    apply_wslg_workaround
+fi
 
 # Install profile extensions
 install_vscode_extensions

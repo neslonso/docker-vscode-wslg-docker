@@ -1,14 +1,20 @@
 # ============================================================================
 # Base Docker Compose Configuration
 # ============================================================================
-# This file contains the common configuration for both DinD and DooD modes.
+# This file contains the common configuration shared across all modes.
 # Mode-specific settings are defined in override files:
-# - docker-compose.dind.yml (Docker-in-Docker)
-# - docker-compose.dood.yml (Docker-out-of-Docker)
+#
+# Docker mode (pick one):
+#   - docker-compose.dind.yml (Docker-in-Docker)
+#   - docker-compose.dood.yml (Docker-out-of-Docker)
+#
+# Display mode (pick one, auto-detected by vsc-wslg launcher):
+#   - docker-compose.wslg.yml (WSL2 with WSLg)
+#   - docker-compose.x11.yml  (Native Linux X11, e.g. Ubuntu + XFCE)
 #
 # Usage:
-#   docker-compose -f docker-compose.yml -f docker-compose.dind.yml up
-#   docker-compose -f docker-compose.yml -f docker-compose.dood.yml up
+#   docker compose -f docker-compose.yml -f docker-compose.dind.yml -f docker-compose.wslg.yml up
+#   docker compose -f docker-compose.yml -f docker-compose.dood.yml -f docker-compose.x11.yml up
 
 services:
   vscode:
@@ -19,8 +25,6 @@ services:
     shm_size: '1gb'
     environment:
       - DISPLAY
-      - WAYLAND_DISPLAY
-      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
       - PULSE_SERVER
       - VSCODE_EXTENSIONS_PROFILE
       - BROWSER=firefox-esr
@@ -32,9 +36,8 @@ services:
       # VSCode profile (read-only)
       - ${PROFILE_DIR}:/home/dev/vsc-wslg-${VSCODE_EXTENSIONS_PROFILE}-profile:ro
 
-      # WSLg GUI support
+      # X11 display socket (common to WSLg and native X11)
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - /mnt/wslg:/mnt/wslg
 
       # VSCode persistent data
       - vscode-extensions:/home/dev/.vscode
