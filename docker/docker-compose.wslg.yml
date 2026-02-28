@@ -1,0 +1,25 @@
+# ============================================================================
+# WSLg Display Mode - Override Configuration
+# ============================================================================
+# This file extends docker-compose.yml with WSLg-specific display settings.
+#
+# WSLg Mode Features:
+# - Uses WSLg's built-in X11/Wayland compositor
+# - Mounts /mnt/wslg for runtime directory and Wayland socket
+# - Applies workaround for WSLg window positioning bug (#529)
+# - No xhost or Xauthority configuration needed
+#
+# Auto-detected by vsc-wslg launcher when running inside WSL2.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dind.yml -f docker-compose.wslg.yml up
+
+services:
+  vscode:
+    environment:
+      - WAYLAND_DISPLAY
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - DISPLAY_MODE=wslg
+    volumes:
+      # WSLg runtime directory (Wayland socket, XDG runtime)
+      - /mnt/wslg:/mnt/wslg
