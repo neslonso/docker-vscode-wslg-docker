@@ -4,6 +4,7 @@ ms-vscode-remote.remote-containers
 
 # === AI ===
 anthropic.claude-code
+github.copilot-chat
 
 # === GIT ===
 mhutchie.git-graph
@@ -17,7 +18,6 @@ ms-python.debugpy
 donjayamanne.python-extension-pack
 donjayamanne.python-environment-manager
 njpwerner.autodocstring
-github.copilot-chat
 kevinrose.vsc-python-indent
 njqdev.vscode-python-typehint
 
