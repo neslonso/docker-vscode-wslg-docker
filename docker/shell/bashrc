@@ -8,14 +8,6 @@ case $- in
 esac
 
 # ---------------------------------------------------------------------------
-# History
-# ---------------------------------------------------------------------------
-HISTCONTROL=ignoreboth
-HISTSIZE=1000
-HISTFILESIZE=2000
-shopt -s histappend
-
-# ---------------------------------------------------------------------------
 # Shell options
 # ---------------------------------------------------------------------------
 shopt -s checkwinsize
@@ -60,7 +52,7 @@ eval "$(starship init bash)"
 [ -f ~/.bashrc_profile ] && . ~/.bashrc_profile
 
 # ---------------------------------------------------------------------------
-# Zoxide (smarter cd) — MUST be last, nothing should be added below this line
+# Zoxide (smarter cd) — must come after starship
 # see https://github.com/ajeetdsouza/zoxide#installation
 #
 # Default commands (no --cmd override):
@@ -73,3 +65,27 @@ eval "$(starship init bash)"
 # ---------------------------------------------------------------------------
 export _ZO_DOCTOR=0
 eval "$(zoxide init bash)"
+
+# ---------------------------------------------------------------------------
+# History — unlimited, ISO timestamps, multi-terminal sync
+# MUST be last: _pc_add hooks go after starship and zoxide in PROMPT_COMMAND
+# ---------------------------------------------------------------------------
+HISTSIZE=
+HISTFILESIZE=
+HISTTIMEFORMAT="%F %T -> "
+HISTCONTROL=ignoreboth
+shopt -s histappend
+
+_pc_add() {
+	if [[ -n "$PROMPT_COMMAND" ]]; then
+		PROMPT_COMMAND="$PROMPT_COMMAND; $1"
+	else
+		PROMPT_COMMAND="$1"
+	fi
+}
+
+# Sync: read new → write ours → clear → reload
+_pc_add 'history -n'
+_pc_add 'history -a'
+_pc_add 'history -c'
+_pc_add 'history -r'
